@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { spawn } from "node:child_process";
-import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
 
 const args = process.argv.slice(2);
 
@@ -10,7 +10,8 @@ if (args.length === 0) {
   process.exit(1);
 }
 
-const nextCli = fileURLToPath(new URL("../node_modules/next/dist/bin/next", import.meta.url));
+const require = createRequire(import.meta.url);
+const nextCli = require.resolve("next/dist/bin/next");
 
 const child = spawn(process.execPath, [nextCli, ...args], {
   stdio: "inherit",

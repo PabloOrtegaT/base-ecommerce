@@ -6,6 +6,10 @@
     "dev": "node ./scripts/run-next.mjs dev",
     "build": "node ./scripts/run-next.mjs build",
     "start": "node ./scripts/run-next.mjs start",
+    "cf:build": "opennextjs-cloudflare build",
+    "preview": "npm run cf:build && opennextjs-cloudflare preview",
+    "deploy": "npm run cf:build && opennextjs-cloudflare deploy",
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --coverage",
@@ -23,20 +27,22 @@
     "recharts": "^3.8.0"
   },
   "devDependencies": {
+    "@opennextjs/cloudflare": "^1.17.1",
     "@playwright/test": "^1.56.1",
+    "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
-    "@vitest/coverage-v8": "^4.0.7",
-    "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitest/coverage-v8": "^4.0.7",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "jsdom": "^27.0.1",
     "tailwindcss": "^4",
     "typescript": "^5",
-    "vitest": "^4.0.7"
+    "vitest": "^4.0.7",
+    "wrangler": "^4.72.0"
   }
 }

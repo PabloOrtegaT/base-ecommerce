@@ -4,6 +4,9 @@ node_modules/
 # next.js
 .next/
 out/
+.open-next/
+.wrangler/
+cloudflare-env.d.ts
 
 # tests
 coverage/
@@ -20,6 +23,9 @@ pnpm-debug.log*
 .env
 .env.local
 .env.*.local
+*.dev.vars
+*.dev.vars.*
+!*.dev.vars.example
 
 # system
 .DS_Store
