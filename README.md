@@ -57,6 +57,11 @@ Required environment variables for deploy:
 - `CLOUDFLARE_ACCOUNT_ID`
 - `CLOUDFLARE_API_TOKEN`
 
+If you deploy from Cloudflare dashboard build pipelines, ensure optional native deps are installed:
+
+- install command: `npm ci --include=optional`
+- if old caches were created before this config, run one deploy with cleared build cache.
+
 ### GitHub Actions deploy
 
 Workflow: `.github/workflows/deploy-cloudflare.yml`
