@@ -40,5 +40,8 @@ jobs:
       - name: Unit tests
         run: npm run test
 
+      - name: Cloudflare preflight
+        run: npm run cf:preflight
+
       - name: Deploy to Cloudflare Workers
         run: npm run cf:deploy

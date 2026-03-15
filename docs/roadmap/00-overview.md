@@ -51,9 +51,10 @@ Minimum per deliverable:
 ## Deliverable index
 
 1. `01-foundation.md`
-2. `02-domain-and-data.md`
-3. `03-storefront-home-catalog.md`
-4. `04-admin-dashboard.md`
-5. `05-payments-and-orders.md`
-6. `06-seo-and-discoverability.md`
-7. `07-hardening-and-release.md`
+2. `01b-database-readiness.md`
+3. `02-domain-and-data.md`
+4. `03-storefront-home-catalog.md`
+5. `04-admin-dashboard.md`
+6. `05-payments-and-orders.md`
+7. `06-seo-and-discoverability.md`
+8. `07-hardening-and-release.md`

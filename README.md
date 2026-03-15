@@ -60,6 +60,21 @@ npm run test
 
 The web app includes OpenNext + Wrangler setup under `apps/web`.
 
+### D1 setup (required before first deploy)
+
+1. Create production D1:
+   `npx wrangler d1 create base-ecommerce-prod`
+2. Create preview/shared staging D1:
+   `npx wrangler d1 create base-ecommerce-preview`
+3. Copy the returned database IDs and update `apps/web/wrangler.jsonc`:
+   `database_id` = prod DB ID
+   `preview_database_id` = preview DB ID
+4. Run preflight:
+   `npm run cf:preflight`
+5. Apply migrations:
+   `npm run db:migrate:remote`
+   `npm run db:migrate:remote:preview`
+
 ### Local Cloudflare preview
 
 ```bash
@@ -82,6 +97,7 @@ If you deploy from Cloudflare dashboard build pipelines, ensure optional native 
 
 - install command: `npm ci --include=optional`
 - if old caches were created before this config, run one deploy with cleared build cache.
+- preflight gate is required and fails if D1 IDs in `wrangler.jsonc` are placeholders.
 
 ### GitHub Actions deploy
 

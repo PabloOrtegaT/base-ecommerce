@@ -24,13 +24,19 @@ Implement customer identity flows and reliable checkout with cart continuity, or
 
 ## Architecture lock (mandatory before coding)
 
+## Dependency baseline
+
+- Deliverable `01b-database-readiness.md` defines the Cloudflare D1 baseline required for Deliverable 05 rollout on Cloudflare.
+- Deliverable 05 assumes production and preview D1 bindings are valid and migrations are in sync.
+
 ### Data persistence contract
 
 - Persistence stack:
   - Cloudflare D1 as primary relational store.
   - Drizzle ORM + SQL migrations as schema source-of-truth.
 - Ownership:
-  - Auth/session tables and cart tables are owned by Deliverable 05.
+  - D1 provisioning and binding correctness are owned by Deliverable 01b.
+  - Auth/session tables and cart tables are implemented in Deliverable 05.
   - Existing catalog/content seed runtime store remains as compatibility layer until full persistence migration.
 - Required tables in this deliverable:
   - users (with role and verification state)

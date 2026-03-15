@@ -7,9 +7,9 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "base-ecommerce",
-      "database_id": "00000000-0000-0000-0000-000000000000",
-      "preview_database_id": "00000000-0000-0000-0000-000000000000",
+      "database_name": "base-ecommerce-prod",
+      "database_id": "0ca8362c-041a-4801-beec-11cd9cdf8a1d",
+      "preview_database_id": "ce4b9ca8-2c9c-42ee-8601-e41a7131fa82",
       "migrations_dir": "drizzle/migrations"
     }
   ],

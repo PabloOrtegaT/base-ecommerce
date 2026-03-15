@@ -42,3 +42,4 @@ Create a production-ready base skeleton with core tooling, conventions, and qual
 - CI config with quality gates.
 - Initial `TESTING.md` guide.
 - `docs/flows/01-foundation/foundation-scaffold-flow.md`.
+- Handoff to `01b-database-readiness.md` for real Cloudflare D1 provisioning.
