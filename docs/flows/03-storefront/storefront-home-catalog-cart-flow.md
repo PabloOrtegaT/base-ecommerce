@@ -33,7 +33,8 @@ Customers need a complete browse-and-buy journey from discovery to cart with cle
   - update quantity
   - remove
   - totals calculation
-- Cart persistence uses browser local storage for MVP behavior.
+- Cart state is orchestrated with Zustand on the client and persisted in browser local storage for guest behavior.
+- After login, guest cart is synchronized with authenticated server cart through merge flow (`/auth/sync-cart`).
 - Theme initialization script applies day/night mode before hydration to avoid flash.
 - Theme toggle persists preference in browser storage and updates document-level theme tokens.
 
@@ -47,8 +48,8 @@ Customers need a complete browse-and-buy journey from discovery to cart with cle
 
 - Fully client-side catalog fetching:
   - Faster prototype but weaker SEO and harder cache control.
-- Session/server cart from day one:
-  - More robust for authenticated users but adds backend complexity too early.
+- Full server cart for every state transition:
+  - More consistent source-of-truth, but higher complexity for initial storefront deliverable.
 
 ## Data contracts or schemas involved
 
@@ -81,7 +82,7 @@ Customers need a complete browse-and-buy journey from discovery to cart with cle
 ## Security considerations
 
 - Server-side product lookup validates route parameters through controlled data access.
-- Cart persistence is client-side only; no trusted server mutation in this deliverable.
+- Guest cart input is untrusted and normalized before server merge when authenticated.
 - Input values (quantity, sort/query) are bounded and normalized.
 
 ## Tests that validate this flow
@@ -98,6 +99,5 @@ Customers need a complete browse-and-buy journey from discovery to cart with cle
 
 ## Open questions or future improvements
 
-- Move cart persistence to server for authenticated users.
 - Add pagination and faceted filtering.
 - Add product image gallery and richer variant UX.

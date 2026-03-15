@@ -6,7 +6,8 @@ Provide an operational dashboard for managing products, content, and catalog upd
 
 ## Scope
 
-- Authentication and role-gated admin routes.
+- Authentication and role-gated admin routes (phase 1 role guard in this deliverable, session-backed auth integration in Deliverable 05).
+- Dedicated admin host surface (`admin.<domain>`) with host-level route enforcement.
 - Product and variant CRUD.
 - Category and attribute management.
 - Home content management.

@@ -11,7 +11,16 @@ Reusable ecommerce foundation built with Next.js, TypeScript, and workspace pack
 
 ```bash
 npm install
+cp apps/web/.dev.vars.example apps/web/.dev.vars
+npm run db:migrate:local
+npm run db:seed
 ```
+
+Optional local host split for admin surface:
+
+- `APP_BASE_URL=http://storefront.lvh.me:3000`
+- `ADMIN_BASE_URL=http://admin.lvh.me:3000`
+- run dev and open `http://storefront.lvh.me:3000` for storefront, `http://admin.lvh.me:3000/admin` for admin.
 
 ## Run locally
 
@@ -21,6 +30,11 @@ npm run dev
 
 App URL: `http://localhost:3000`
 
+Default local seeded owner account:
+
+- Email: `owner@base-ecommerce.local`
+- Password: `ChangeMe123!`
+
 ## Quality checks
 
 ```bash
@@ -28,6 +42,13 @@ npm run lint
 npm run typecheck
 npm run test
 ```
+
+## D05 Auth + Cart foundation
+
+- Auth stack: Auth.js (`next-auth`) + Drizzle adapter + JWT sessions + rotating refresh sessions.
+- Persistence: Cloudflare D1 (`DB` binding) + Drizzle migrations.
+- Guest cart merges into authenticated server cart after login via `/auth/sync-cart`.
+- Dedicated admin host routing is enforced by middleware when `ADMIN_BASE_URL` differs from `APP_BASE_URL`.
 
 ## Documentation
 

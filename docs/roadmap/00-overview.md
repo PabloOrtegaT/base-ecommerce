@@ -21,6 +21,7 @@ Detailed product and technical explanations live under `docs/`.
 
 - Next.js App Router for server-first rendering and data fetching.
 - Zod for schema validation at API boundaries and forms.
+- Zustand for client-side UI/session state (for example cart UI state and auth/session helpers), not as the server source of truth.
 - TanStack Table for admin data tables.
 - Recharts for dashboard analytics visualizations.
 - Token-based theming with light/dark mode support as a reusable base capability.

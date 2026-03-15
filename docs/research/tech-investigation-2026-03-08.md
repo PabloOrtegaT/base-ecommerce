@@ -40,7 +40,7 @@ Use Zod as the canonical runtime validation layer across:
 3. Reuse schema in route handlers, server actions, and form handlers.
 4. Return normalized validation errors for UI rendering.
 
-## 2) React Query vs Next.js server data strategy
+## 2) Next.js server data + React Query + Zustand strategy
 
 ## Decision
 
@@ -48,11 +48,13 @@ Use a hybrid policy:
 
 1. Default to Next.js server-first data patterns for read-heavy ecommerce pages.
 2. Use React Query only in client-heavy interactive modules (mostly admin dashboard and some cart/checkout UX cases).
+3. Use Zustand for lightweight client state that does not replace server data ownership.
 
 ## Why
 
 - Next.js App Router supports server fetching, caching, and revalidation natively.
 - React Query is still useful for rich client interactions, optimistic updates, polling, and cache invalidation on client-driven workflows.
+- Zustand is a good fit for ephemeral/session UX state (for example cart drawer UI state, auth modal state, merge feedback state).
 - This avoids unnecessary client complexity on SEO-critical storefront pages.
 
 ## Practical rule
@@ -60,6 +62,7 @@ Use a hybrid policy:
 1. If data is needed for initial page render and SEO, fetch on the server.
 2. If data is user-interactive, rapidly changing, or client-driven, use React Query in a client component boundary.
 3. Do not treat React Query as global server state; server state should be handled with Next.js data cache and revalidation mechanisms.
+4. Use Zustand for client-only state and UI orchestration; do not duplicate payment/order/catalog source-of-truth data in Zustand.
 
 ## 3) SEO metadata and ranking readiness
 
@@ -114,8 +117,9 @@ No framework can guarantee first-page ranking by itself. The base project should
 1. Validation-first boundaries with Zod.
 2. Server-first rendering for storefront SEO pages.
 3. React Query only where interaction complexity requires it.
-4. Structured-data and metadata coverage tested in CI.
-5. Unit tests required per deliverable plus E2E on critical commerce flows.
+4. Zustand only for client state boundaries, not server truth.
+5. Structured-data and metadata coverage tested in CI.
+6. Unit tests required per deliverable plus E2E on critical commerce flows.
 
 ## Source links
 

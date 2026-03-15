@@ -12,7 +12,8 @@ Ship the customer-facing MVP browsing experience.
   - Featured sales/products.
 - Category and product listing pages.
 - Product detail page.
-- Cart basics.
+- Cart basics for guest users (local persistence).
+- Cart merge/server synchronization for authenticated users is deferred to Deliverable 05.
 - Storefront light/dark theme support.
 
 ## Implementation checklist
