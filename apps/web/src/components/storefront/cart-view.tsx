@@ -1,23 +1,66 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { Button } from "@base-ecommerce/ui";
-import { calculateCartTotals, emptyCartState, removeCartItem, updateCartItemQuantity, type CartState } from "@/features/cart/cart";
-import { readCartFromStorage, writeCartToStorage } from "@/features/cart/storage";
+import { calculateCartTotals, getUnavailableCartItems } from "@/features/cart/cart";
+import type { CartMergeSummary } from "@/features/cart/merge-summary";
+import { useCartStore } from "@/features/cart/cart-store";
 import { formatCurrencyFromCents } from "@/features/catalog/pricing";
 
-export function CartView() {
-  const [cart, setCart] = useState<CartState>(() =>
-    typeof window === "undefined" ? emptyCartState : readCartFromStorage(),
-  );
+type CartViewProps = {
+  authenticated: boolean;
+};
+
+export function CartView({ authenticated }: CartViewProps) {
+  const cart = useCartStore((state) => state.cart);
+  const updateQuantity = useCartStore((state) => state.updateQuantity);
+  const removeItem = useCartStore((state) => state.removeItem);
+  const mergeSummary = useCartStore((state) => state.mergeSummary);
+  const clearMergeSummary = useCartStore((state) => state.clearMergeSummary);
+  const replaceCart = useCartStore((state) => state.replaceCart);
+  const applyMergeSummary = useCartStore((state) => state.applyMergeSummary);
+
+  useEffect(() => {
+    if (!authenticated) {
+      return;
+    }
+
+    const loadServerCart = async () => {
+      const localCartSnapshot = useCartStore.getState().cart;
+      if (localCartSnapshot.items.length > 0) {
+        const mergeResponse = await fetch("/api/cart/merge", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(localCartSnapshot),
+        });
+
+        if (mergeResponse.ok) {
+          const mergePayload = (await mergeResponse.json()) as {
+            cart: typeof cart;
+            summary: CartMergeSummary;
+          };
+          replaceCart(mergePayload.cart);
+          applyMergeSummary(mergePayload.summary);
+          return;
+        }
+      }
+
+      const response = await fetch("/api/cart", { method: "GET" });
+      if (!response.ok) {
+        return;
+      }
+      const payload = (await response.json()) as { cart: typeof cart };
+      replaceCart(payload.cart);
+    };
+
+    loadServerCart();
+  }, [applyMergeSummary, authenticated, replaceCart]);
 
   const totals = useMemo(() => calculateCartTotals(cart), [cart]);
-
-  const applyCart = (nextCart: CartState) => {
-    setCart(nextCart);
-    writeCartToStorage(nextCart);
-  };
+  const unavailableItems = useMemo(() => getUnavailableCartItems(cart), [cart]);
 
   if (cart.items.length === 0) {
     return (
@@ -37,6 +80,33 @@ export function CartView() {
     <main className="mx-auto w-full max-w-4xl space-y-5 px-6 py-10">
       <h1 className="text-3xl font-semibold tracking-tight">Your cart</h1>
 
+      {mergeSummary.messages.length > 0 && (
+        <section className="space-y-2 rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-4 text-sm text-card-foreground">
+          <p className="font-medium">Cart merge summary</p>
+          <ul className="list-disc space-y-1 pl-5">
+            {mergeSummary.messages.map((message) => (
+              <li key={message}>{message}</li>
+            ))}
+          </ul>
+          <Button variant="outline" onClick={clearMergeSummary}>
+            Dismiss
+          </Button>
+        </section>
+      )}
+
+      {unavailableItems.length > 0 && (
+        <section className="space-y-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-card-foreground">
+          <p className="font-medium">Some items require attention before checkout:</p>
+          <ul className="list-disc space-y-1 pl-5">
+            {unavailableItems.map((item) => (
+              <li key={item.variantId}>
+                {item.name} ({item.variantName}): {item.unavailableReason}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <section className="space-y-3">
         {cart.items.map((item) => (
           <article key={item.variantId} className="rounded-lg border bg-card p-4 text-card-foreground">
@@ -46,9 +116,8 @@ export function CartView() {
                   {item.name}
                 </Link>
                 <p className="text-sm text-muted-foreground">{item.variantName}</p>
-                <p className="text-sm text-muted-foreground">
-                  {formatCurrencyFromCents(item.unitPriceCents, item.currency)}
-                </p>
+                <p className="text-sm text-muted-foreground">{formatCurrencyFromCents(item.unitPriceCents, item.currency)}</p>
+                {item.unavailableReason && <p className="text-sm text-amber-700">{item.unavailableReason}</p>}
               </div>
 
               <div className="flex items-center gap-2">
@@ -62,18 +131,11 @@ export function CartView() {
                     if (Number.isNaN(parsed)) {
                       return;
                     }
-                    const next = updateCartItemQuantity(cart, item.variantId, parsed);
-                    applyCart(next);
+                    updateQuantity(item.variantId, parsed);
                   }}
                   className="w-20 rounded-md border bg-background px-2 py-1 text-sm"
                 />
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    const next = removeCartItem(cart, item.variantId);
-                    applyCart(next);
-                  }}
-                >
+                <Button variant="ghost" onClick={() => removeItem(item.variantId)}>
                   Remove
                 </Button>
               </div>
@@ -83,10 +145,8 @@ export function CartView() {
       </section>
 
       <section className="rounded-lg border bg-card p-4 text-card-foreground">
-        <p className="text-sm text-muted-foreground">Items: {totals.itemCount}</p>
-        <p className="text-lg font-semibold">
-          Subtotal: {formatCurrencyFromCents(totals.subtotalCents, currency)}
-        </p>
+        <p className="text-sm text-muted-foreground">Items available for checkout: {totals.itemCount}</p>
+        <p className="text-lg font-semibold">Subtotal: {formatCurrencyFromCents(totals.subtotalCents, currency)}</p>
       </section>
     </main>
   );

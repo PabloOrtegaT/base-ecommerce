@@ -3,8 +3,8 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Button } from "@base-ecommerce/ui";
-import { addCartItem, calculateCartTotals } from "@/features/cart/cart";
-import { readCartFromStorage, writeCartToStorage } from "@/features/cart/storage";
+import { calculateCartTotals } from "@/features/cart/cart";
+import { useCartStore } from "@/features/cart/cart-store";
 import { formatCurrencyFromCents, getPriceDisplay } from "@/features/catalog/pricing";
 
 type VariantItem = {
@@ -33,6 +33,7 @@ export function ProductPurchasePanel({
   currency,
   variants,
 }: ProductPurchasePanelProps) {
+  const addItem = useCartStore((state) => state.addItem);
   const [selectedVariantId, setSelectedVariantId] = useState(variants[0]?.id ?? "");
   const [quantity, setQuantity] = useState(1);
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -54,9 +55,7 @@ export function ProductPurchasePanel({
   const isOutOfStock = selectedVariant.stockOnHand <= 0;
 
   const onAddToCart = () => {
-    const cart = readCartFromStorage();
-    const nextCart = addCartItem(
-      cart,
+    addItem(
       {
         productId,
         variantId: selectedVariant.id,
@@ -69,8 +68,7 @@ export function ProductPurchasePanel({
       },
       quantity,
     );
-    writeCartToStorage(nextCart);
-    const totals = calculateCartTotals(nextCart);
+    const totals = calculateCartTotals(useCartStore.getState().cart);
     setFeedback(`Added to cart. You now have ${totals.itemCount} item(s).`);
   };
 

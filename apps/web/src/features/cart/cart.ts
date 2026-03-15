@@ -8,6 +8,7 @@ export type CartItem = {
   unitPriceCents: number;
   stockOnHand: number;
   quantity: number;
+  unavailableReason?: string;
 };
 
 export type CartState = {
@@ -77,10 +78,17 @@ export function removeCartItem(cart: CartState, variantId: string): CartState {
 export function calculateCartTotals(cart: CartState) {
   return cart.items.reduce(
     (acc, line) => {
+      if (line.unavailableReason) {
+        return acc;
+      }
       acc.itemCount += line.quantity;
       acc.subtotalCents += line.quantity * line.unitPriceCents;
       return acc;
     },
     { itemCount: 0, subtotalCents: 0 },
   );
+}
+
+export function getUnavailableCartItems(cart: CartState) {
+  return cart.items.filter((line) => typeof line.unavailableReason === "string");
 }

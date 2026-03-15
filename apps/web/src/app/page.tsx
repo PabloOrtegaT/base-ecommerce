@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Button } from "@base-ecommerce/ui";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { ProductCard } from "@/components/storefront/product-card";
+import { getSessionUser } from "@/server/auth/session";
 import { getHomeContent, listCatalogProducts } from "@/server/data/storefront-service";
 
 export const metadata: Metadata = {
@@ -10,7 +11,10 @@ export const metadata: Metadata = {
   description: "Stay updated with latest news, active discounts, and featured products.",
 };
 
-export default function HomePage() {
+export const dynamic = "force-dynamic";
+
+export default async function HomePage() {
+  const user = await getSessionUser();
   const home = getHomeContent();
   const catalogProducts = listCatalogProducts();
 
@@ -29,6 +33,9 @@ export default function HomePage() {
             </Button>
             <Button asChild variant="outline">
               <Link href="/admin">Admin snapshot</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href={user ? "/account" : "/login"}>{user ? "My account" : "Login"}</Link>
             </Button>
             <ThemeToggle />
           </div>
