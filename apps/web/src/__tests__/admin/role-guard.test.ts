@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canAccessAdminRoute, getRouteAccess } from "@/server/admin/role-guard";
+import { canAccessAdminPermission, canAccessAdminRoute } from "@/server/admin/role-guard";
 
 describe("admin route guards", () => {
   it("owner can access all admin routes", () => {
@@ -16,13 +16,8 @@ describe("admin route guards", () => {
     expect(canAccessAdminRoute("catalog", "import")).toBe(true);
   });
 
-  it("reads role from env for route access checks", () => {
-    const access = getRouteAccess("products", {
-      ...process.env,
-      ADMIN_ROLE: "manager",
-    });
-
-    expect(access.role).toBe("manager");
-    expect(access.allowed).toBe(true);
+  it("maps permissions consistently", () => {
+    expect(canAccessAdminPermission("manager", "orders:write")).toBe(true);
+    expect(canAccessAdminPermission("catalog", "orders:write")).toBe(false);
   });
 });
