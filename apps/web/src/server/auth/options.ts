@@ -14,6 +14,13 @@ import { validateCredentials } from "./service";
 export function getAuthOptions(): NextAuthOptions {
   const env = getRuntimeEnvironment();
   const db = getDb();
+  const authSecret =
+    env.AUTH_SECRET ??
+    (process.env.NODE_ENV === "development" ? "dev-auth-secret-change-me-please-override" : undefined);
+
+  if (!authSecret) {
+    throw new Error("AUTH_SECRET must be set in production.");
+  }
 
   const providers: NonNullable<NextAuthOptions["providers"]> = [
     CredentialsProvider({
@@ -123,9 +130,7 @@ export function getAuthOptions(): NextAuthOptions {
     },
   };
 
-  if (env.AUTH_SECRET) {
-    options.secret = env.AUTH_SECRET;
-  }
+  options.secret = authSecret;
 
   return options;
 }

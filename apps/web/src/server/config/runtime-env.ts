@@ -92,10 +92,14 @@ export function getDatabaseBinding() {
 }
 
 function readRawEnvironment(): MaybeCloudflareEnv {
+  const processEnv = process.env as MaybeCloudflareEnv;
   try {
     const context = getCloudflareContext();
-    return context.env as MaybeCloudflareEnv;
+    return {
+      ...processEnv,
+      ...(context.env as MaybeCloudflareEnv),
+    };
   } catch {
-    return process.env as MaybeCloudflareEnv;
+    return processEnv;
   }
 }

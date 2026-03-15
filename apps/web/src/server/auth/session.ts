@@ -10,7 +10,14 @@ import { getUserById } from "./service";
 import { getAuthOptions } from "./options";
 
 export async function getSession() {
-  return getServerSession(getAuthOptions());
+  try {
+    return await getServerSession(getAuthOptions());
+  } catch (error) {
+    if (error instanceof Error && /decryption operation failed/i.test(error.message)) {
+      return null;
+    }
+    throw error;
+  }
 }
 
 export type SessionUser = {
