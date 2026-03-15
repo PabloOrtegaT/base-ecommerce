@@ -2,10 +2,12 @@
 
 import { useEffect } from "react";
 import { signOut } from "next-auth/react";
+import { useCartStore } from "@/features/cart/cart-store";
 
 export default function LogoutPage() {
   useEffect(() => {
     const run = async () => {
+      useCartStore.getState().clearCart();
       await fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined);
       await signOut({ callbackUrl: "/" });
     };

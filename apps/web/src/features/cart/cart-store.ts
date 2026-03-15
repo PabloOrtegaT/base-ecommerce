@@ -18,6 +18,7 @@ type CartStoreState = {
   addItem: (item: Omit<CartItem, "quantity">, quantity: number) => void;
   updateQuantity: (variantId: string, quantity: number) => void;
   removeItem: (variantId: string) => void;
+  hydrateCart: (cart: CartState) => void;
   replaceCart: (cart: CartState) => void;
   applyMergeSummary: (summary: CartMergeSummary) => void;
   clearMergeSummary: () => void;
@@ -75,6 +76,10 @@ export const useCartStore = create<CartStoreState>((set, get) => ({
     persistCart(next);
     void persistCartToServer(next);
     set({ cart: next });
+  },
+  hydrateCart: (cart) => {
+    persistCart(cart);
+    set({ cart });
   },
   replaceCart: (cart) => {
     persistCart(cart);

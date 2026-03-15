@@ -37,14 +37,41 @@ type MergeResponse = {
 
 export function CartSyncClient() {
   const router = useRouter();
-  const replaceCart = useCartStore((state) => state.replaceCart);
+  const hydrateCart = useCartStore((state) => state.hydrateCart);
   const applyMergeSummary = useCartStore((state) => state.applyMergeSummary);
   const [error, setError] = useState<string | null>(null);
   const guestCart = useMemo(() => readCartFromStorage(), []);
 
   useEffect(() => {
+    const hasSameLineQuantities = (left: MergeResponse["cart"], right: MergeResponse["cart"]) => {
+      const leftByVariant = new Map(left.items.map((item) => [item.variantId, item.quantity]));
+      const rightByVariant = new Map(right.items.map((item) => [item.variantId, item.quantity]));
+      if (leftByVariant.size !== rightByVariant.size) {
+        return false;
+      }
+      for (const [variantId, quantity] of leftByVariant.entries()) {
+        if (rightByVariant.get(variantId) !== quantity) {
+          return false;
+        }
+      }
+      return true;
+    };
+
     const run = async () => {
       try {
+        const serverCartResponse = await fetch("/api/cart", { method: "GET" });
+        if (!serverCartResponse.ok) {
+          setError("Could not sync cart. You can continue and review your cart manually.");
+          return;
+        }
+
+        const serverPayload = (await serverCartResponse.json()) as { cart: MergeResponse["cart"] };
+        if (guestCart.items.length === 0 || hasSameLineQuantities(guestCart, serverPayload.cart)) {
+          hydrateCart(serverPayload.cart);
+          router.replace("/cart");
+          return;
+        }
+
         const response = await fetch("/api/cart/merge", {
           method: "POST",
           headers: {
@@ -54,12 +81,13 @@ export function CartSyncClient() {
         });
 
         if (!response.ok) {
+          hydrateCart(serverPayload.cart);
           setError("Could not sync cart. You can continue and review your cart manually.");
           return;
         }
 
         const payload = (await response.json()) as MergeResponse;
-        replaceCart(payload.cart);
+        hydrateCart(payload.cart);
         applyMergeSummary(payload.summary);
         router.replace("/cart");
       } catch {
@@ -68,7 +96,7 @@ export function CartSyncClient() {
     };
 
     run();
-  }, [applyMergeSummary, guestCart, replaceCart, router]);
+  }, [applyMergeSummary, guestCart, hydrateCart, router]);
 
   if (error) {
     return (
@@ -94,4 +122,3 @@ export function CartSyncClient() {
     </section>
   );
 }
-

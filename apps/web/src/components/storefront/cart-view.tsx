@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useEffect, useMemo } from "react";
 import { Button } from "@base-ecommerce/ui";
 import { calculateCartTotals, getUnavailableCartItems } from "@/features/cart/cart";
-import type { CartMergeSummary } from "@/features/cart/merge-summary";
 import { useCartStore } from "@/features/cart/cart-store";
 import { formatCurrencyFromCents } from "@/features/catalog/pricing";
 
@@ -18,8 +17,7 @@ export function CartView({ authenticated }: CartViewProps) {
   const removeItem = useCartStore((state) => state.removeItem);
   const mergeSummary = useCartStore((state) => state.mergeSummary);
   const clearMergeSummary = useCartStore((state) => state.clearMergeSummary);
-  const replaceCart = useCartStore((state) => state.replaceCart);
-  const applyMergeSummary = useCartStore((state) => state.applyMergeSummary);
+  const hydrateCart = useCartStore((state) => state.hydrateCart);
 
   useEffect(() => {
     if (!authenticated) {
@@ -27,37 +25,16 @@ export function CartView({ authenticated }: CartViewProps) {
     }
 
     const loadServerCart = async () => {
-      const localCartSnapshot = useCartStore.getState().cart;
-      if (localCartSnapshot.items.length > 0) {
-        const mergeResponse = await fetch("/api/cart/merge", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(localCartSnapshot),
-        });
-
-        if (mergeResponse.ok) {
-          const mergePayload = (await mergeResponse.json()) as {
-            cart: typeof cart;
-            summary: CartMergeSummary;
-          };
-          replaceCart(mergePayload.cart);
-          applyMergeSummary(mergePayload.summary);
-          return;
-        }
-      }
-
       const response = await fetch("/api/cart", { method: "GET" });
       if (!response.ok) {
         return;
       }
       const payload = (await response.json()) as { cart: typeof cart };
-      replaceCart(payload.cart);
+      hydrateCart(payload.cart);
     };
 
     loadServerCart();
-  }, [applyMergeSummary, authenticated, replaceCart]);
+  }, [authenticated, hydrateCart]);
 
   const totals = useMemo(() => calculateCartTotals(cart), [cart]);
   const unavailableItems = useMemo(() => getUnavailableCartItems(cart), [cart]);
