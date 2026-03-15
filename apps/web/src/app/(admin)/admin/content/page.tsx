@@ -20,10 +20,10 @@ import { getRouteAccess } from "@/server/admin/role-guard";
 const defaultStartsAt = "2026-03-01T00:00:00.000Z";
 const defaultEndsAt = "2026-12-31T23:59:59.000Z";
 
-export default function AdminContentPage() {
-  const access = getRouteAccess("content");
+export default async function AdminContentPage() {
+  const access = await getRouteAccess("content");
   if (!access.allowed) {
-    return <AccessDenied role={access.role} section="content management" />;
+    return <AccessDenied role={access.role ?? "unknown"} section="content management" />;
   }
 
   const contentRows = listAdminContentRows();

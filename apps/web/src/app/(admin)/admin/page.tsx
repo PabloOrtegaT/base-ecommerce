@@ -6,10 +6,10 @@ import { listAdminDashboardAnalytics, listAdminOrders } from "@/server/admin/adm
 import { getRouteAccess } from "@/server/admin/role-guard";
 import { getAdminContentSnapshot } from "@/server/data/storefront-service";
 
-export default function AdminPage() {
-  const access = getRouteAccess("dashboard");
+export default async function AdminPage() {
+  const access = await getRouteAccess("dashboard");
   if (!access.allowed) {
-    return <AccessDenied role={access.role} section="dashboard" />;
+    return <AccessDenied role={access.role ?? "unknown"} section="dashboard" />;
   }
 
   const snapshot = getAdminContentSnapshot();

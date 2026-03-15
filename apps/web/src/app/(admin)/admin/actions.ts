@@ -1,6 +1,5 @@
 "use server";
 
-import type { Permission } from "@base-ecommerce/domain";
 import { revalidatePath } from "next/cache";
 import {
   createAdminCategory,
@@ -18,14 +17,7 @@ import {
   updateAdminProduct,
   updateAdminVariant,
 } from "@/server/admin/admin-service";
-import { getPermissionAccess } from "@/server/admin/role-guard";
-
-function ensurePermission(permission: Permission) {
-  const access = getPermissionAccess(permission);
-  if (!access.allowed) {
-    throw new Error(`Role ${access.role} cannot perform action "${permission}".`);
-  }
-}
+import { ensurePermission } from "@/server/admin/role-guard";
 
 function getRequiredString(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -80,7 +72,7 @@ function revalidateAdminAndStorefrontPaths() {
 }
 
 export async function createCategoryAction(formData: FormData) {
-  ensurePermission("catalog:write");
+  await ensurePermission("catalog:write");
   const slug = getOptionalString(formData, "slug");
   createAdminCategory({
     name: getRequiredString(formData, "name"),
@@ -90,7 +82,7 @@ export async function createCategoryAction(formData: FormData) {
 }
 
 export async function createProductAction(formData: FormData) {
-  ensurePermission("catalog:write");
+  await ensurePermission("catalog:write");
   createAdminProduct({
     name: getRequiredString(formData, "name"),
     categoryId: getRequiredString(formData, "categoryId"),
@@ -103,7 +95,7 @@ export async function createProductAction(formData: FormData) {
 }
 
 export async function updateProductAction(formData: FormData) {
-  ensurePermission("catalog:write");
+  await ensurePermission("catalog:write");
   updateAdminProduct({
     id: getRequiredString(formData, "id"),
     name: getRequiredString(formData, "name"),
@@ -114,7 +106,7 @@ export async function updateProductAction(formData: FormData) {
 }
 
 export async function createVariantAction(formData: FormData) {
-  ensurePermission("catalog:write");
+  await ensurePermission("catalog:write");
   createAdminVariant({
     productId: getRequiredString(formData, "productId"),
     name: getRequiredString(formData, "name"),
@@ -126,7 +118,7 @@ export async function createVariantAction(formData: FormData) {
 }
 
 export async function updateVariantAction(formData: FormData) {
-  ensurePermission("catalog:write");
+  await ensurePermission("catalog:write");
   updateAdminVariant({
     id: getRequiredString(formData, "id"),
     name: getRequiredString(formData, "name"),
@@ -138,7 +130,7 @@ export async function updateVariantAction(formData: FormData) {
 }
 
 export async function createNewsPostAction(formData: FormData) {
-  ensurePermission("content:write");
+  await ensurePermission("content:write");
   createAdminNewsPost({
     title: getRequiredString(formData, "title"),
     summary: getRequiredString(formData, "summary"),
@@ -149,7 +141,7 @@ export async function createNewsPostAction(formData: FormData) {
 }
 
 export async function setNewsStatusAction(formData: FormData) {
-  ensurePermission("content:write");
+  await ensurePermission("content:write");
   setAdminNewsStatus(
     getRequiredString(formData, "newsId"),
     getRequiredString(formData, "status") as "draft" | "published" | "archived",
@@ -158,7 +150,7 @@ export async function setNewsStatusAction(formData: FormData) {
 }
 
 export async function createPromoBannerAction(formData: FormData) {
-  ensurePermission("content:write");
+  await ensurePermission("content:write");
   const subtitle = getOptionalString(formData, "subtitle");
   const ctaLabel = getOptionalString(formData, "ctaLabel");
   const ctaHref = getOptionalString(formData, "ctaHref");
@@ -175,13 +167,13 @@ export async function createPromoBannerAction(formData: FormData) {
 }
 
 export async function setPromoBannerActiveAction(formData: FormData) {
-  ensurePermission("content:write");
+  await ensurePermission("content:write");
   setAdminPromoBannerActive(getRequiredString(formData, "bannerId"), isChecked(formData, "isActive"));
   revalidateAdminAndStorefrontPaths();
 }
 
 export async function createFeaturedSaleAction(formData: FormData) {
-  ensurePermission("content:write");
+  await ensurePermission("content:write");
   const productIdsInput = getRequiredString(formData, "productIds");
   const description = getOptionalString(formData, "description");
   const productIds = productIdsInput
@@ -201,13 +193,13 @@ export async function createFeaturedSaleAction(formData: FormData) {
 }
 
 export async function setFeaturedSaleActiveAction(formData: FormData) {
-  ensurePermission("content:write");
+  await ensurePermission("content:write");
   setAdminFeaturedSaleActive(getRequiredString(formData, "featuredSaleId"), isChecked(formData, "isActive"));
   revalidateAdminAndStorefrontPaths();
 }
 
 export async function createCouponAction(formData: FormData) {
-  ensurePermission("orders:write");
+  await ensurePermission("orders:write");
   const percentageOff = getOptionalNumber(formData, "percentageOff");
   const amountOffCents = getOptionalNumber(formData, "amountOffCents");
   const currency = getOptionalString(formData, "currency");
@@ -227,14 +219,15 @@ export async function createCouponAction(formData: FormData) {
 }
 
 export async function setCouponActiveAction(formData: FormData) {
-  ensurePermission("orders:write");
+  await ensurePermission("orders:write");
   setAdminCouponActive(getRequiredString(formData, "couponId"), isChecked(formData, "isActive"));
   revalidateAdminAndStorefrontPaths();
 }
 
 export async function importCatalogCsvAction(csvText: string) {
-  ensurePermission("catalog:write");
+  await ensurePermission("catalog:write");
   const result = importAdminCatalogFromCsv(csvText);
   revalidateAdminAndStorefrontPaths();
   return result;
 }
+

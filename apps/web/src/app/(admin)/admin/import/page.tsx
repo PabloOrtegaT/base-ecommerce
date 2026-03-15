@@ -3,10 +3,10 @@ import { CsvImportForm } from "@/components/admin/csv-import-form";
 import { listAdminCategories } from "@/server/admin/admin-service";
 import { getRouteAccess } from "@/server/admin/role-guard";
 
-export default function AdminImportPage() {
-  const access = getRouteAccess("import");
+export default async function AdminImportPage() {
+  const access = await getRouteAccess("import");
   if (!access.allowed) {
-    return <AccessDenied role={access.role} section="CSV import" />;
+    return <AccessDenied role={access.role ?? "unknown"} section="CSV import" />;
   }
 
   const categories = listAdminCategories();

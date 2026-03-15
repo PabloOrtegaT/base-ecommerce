@@ -24,9 +24,9 @@ type AdminProductsPageProps = {
 };
 
 export default async function AdminProductsPage({ searchParams }: AdminProductsPageProps) {
-  const access = getRouteAccess("products");
+  const access = await getRouteAccess("products");
   if (!access.allowed) {
-    return <AccessDenied role={access.role} section="products" />;
+    return <AccessDenied role={access.role ?? "unknown"} section="products" />;
   }
 
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
