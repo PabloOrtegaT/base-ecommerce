@@ -7,6 +7,8 @@ import { hashSync } from "bcryptjs";
 const require = createRequire(import.meta.url);
 const wranglerCliPath = require.resolve("wrangler/bin/wrangler.js");
 const workspaceDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const useRemote = process.argv.includes("--remote");
+const usePreview = process.argv.includes("--preview");
 
 const email = process.env.DEV_OWNER_EMAIL ?? "owner@base-ecommerce.local";
 const password = process.env.DEV_OWNER_PASSWORD ?? "ChangeMe123!";
@@ -31,17 +33,29 @@ const command = [
 ].join(" ");
 
 try {
+  const d1Args = [wranglerCliPath, "d1", "execute", "DB", "--config", "wrangler.jsonc"];
+  if (useRemote) {
+    d1Args.push("--remote");
+    if (usePreview) {
+      d1Args.push("--preview");
+    }
+  } else {
+    d1Args.push("--local");
+  }
+  d1Args.push("--command", command);
+
   execFileSync(
     process.execPath,
-    [wranglerCliPath, "d1", "execute", "base-ecommerce", "--local", "--config", "wrangler.jsonc", "--command", command],
+    d1Args,
     {
       stdio: "inherit",
       cwd: workspaceDir,
     },
   );
-  console.log(`[seed] Seeded local owner user: ${email}`);
+  const targetLabel = useRemote ? (usePreview ? "remote preview" : "remote production") : "local";
+  console.log(`[seed] Seeded ${targetLabel} owner user: ${email}`);
   console.log(`[seed] Password: ${password}`);
 } catch (error) {
-  console.error("[seed] Failed to seed local auth data.");
+  console.error("[seed] Failed to seed auth data.");
   throw error;
 }

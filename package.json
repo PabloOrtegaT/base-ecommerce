@@ -20,6 +20,8 @@
     "db:migrate:remote": "npm run db:migrate:remote --workspace @base-ecommerce/web",
     "db:migrate:remote:preview": "npm run db:migrate:remote:preview --workspace @base-ecommerce/web",
     "db:seed": "npm run db:seed --workspace @base-ecommerce/web",
+    "db:seed:remote": "npm run db:seed:remote --workspace @base-ecommerce/web",
+    "db:seed:remote:preview": "npm run db:seed:remote:preview --workspace @base-ecommerce/web",
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",

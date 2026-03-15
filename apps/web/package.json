@@ -16,6 +16,8 @@
     "db:migrate:remote": "wrangler d1 migrations apply DB --remote --config wrangler.jsonc",
     "db:migrate:remote:preview": "wrangler d1 migrations apply DB --remote --preview --config wrangler.jsonc",
     "db:seed": "node ./scripts/seed-auth-dev.mjs",
+    "db:seed:remote": "node ./scripts/seed-auth-dev.mjs --remote",
+    "db:seed:remote:preview": "node ./scripts/seed-auth-dev.mjs --remote --preview",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --coverage",

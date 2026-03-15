@@ -28,9 +28,9 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
     adminBaseUrl: hostConfig.adminBaseUrl,
   });
   const afterLoginPath = `/auth/after-login?next=${encodeURIComponent(nextPath)}`;
-  const callbackUrl = isAdminPath(nextPath)
-    ? buildAbsoluteUrl(hostPolicy.adminBaseUrl, afterLoginPath)
-    : buildAbsoluteUrl(hostPolicy.appBaseUrl, afterLoginPath);
+  const adminHostSplitEnabled = Boolean(hostPolicy.adminHost && hostPolicy.appHost && hostPolicy.adminHost !== hostPolicy.appHost);
+  const callbackUrl =
+    isAdminPath(nextPath) && adminHostSplitEnabled ? buildAbsoluteUrl(hostPolicy.adminBaseUrl, afterLoginPath) : afterLoginPath;
 
   return (
     <main className="mx-auto w-full max-w-lg space-y-4 px-6 py-10">

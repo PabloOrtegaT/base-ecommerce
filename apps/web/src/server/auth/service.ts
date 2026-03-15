@@ -20,9 +20,9 @@ function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
 }
 
-function buildAbsoluteUrl(pathname: string) {
+function buildAbsoluteUrl(pathname: string, fallbackOrigin?: string) {
   const env = getRuntimeEnvironment();
-  const base = env.APP_BASE_URL ?? "http://127.0.0.1:3000";
+  const base = env.APP_BASE_URL ?? fallbackOrigin ?? "http://127.0.0.1:3000";
   return new URL(pathname, base).toString();
 }
 
@@ -50,6 +50,7 @@ export async function registerEmailPasswordUser(input: {
   name: string;
   email: string;
   password: string;
+  origin?: string;
 }) {
   const db = getDb();
   const normalizedEmail = normalizeEmail(input.email);
@@ -89,7 +90,7 @@ export async function registerEmailPasswordUser(input: {
     expires,
   });
 
-  await sendVerificationEmail(normalizedEmail, buildAbsoluteUrl(`/api/auth/verify?token=${token}`));
+  await sendVerificationEmail(normalizedEmail, buildAbsoluteUrl(`/api/auth/verify?token=${token}`, input.origin));
 
   return {
     userId: inserted.id,
@@ -135,7 +136,7 @@ export async function verifyEmailByToken(token: string) {
   return { ok: true, redirectTo: AUTH_REDIRECTS.verifySuccess };
 }
 
-export async function requestPasswordReset(email: string) {
+export async function requestPasswordReset(email: string, origin?: string) {
   const db = getDb();
   const user = await getUserByEmail(email);
   if (!user) {
@@ -153,7 +154,7 @@ export async function requestPasswordReset(email: string) {
     createdAt: new Date(),
   });
 
-  await sendPasswordResetEmail(user.email ?? normalizeEmail(email), buildAbsoluteUrl(`/reset-password?token=${token}`));
+  await sendPasswordResetEmail(user.email ?? normalizeEmail(email), buildAbsoluteUrl(`/reset-password?token=${token}`, origin));
   return { ok: true, redirectTo: AUTH_REDIRECTS.resetRequestSuccess };
 }
 

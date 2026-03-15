@@ -17,6 +17,8 @@ export default async function StorefrontLayout({
     appBaseUrl: hostConfig.appBaseUrl,
     adminBaseUrl: hostConfig.adminBaseUrl,
   });
+  const adminHostSplitEnabled = Boolean(hostPolicy.adminHost && hostPolicy.appHost && hostPolicy.adminHost !== hostPolicy.appHost);
+  const adminHref = adminHostSplitEnabled ? `${hostPolicy.adminBaseUrl}/admin` : "/admin";
 
   return (
     <div className="min-h-screen bg-background">
@@ -47,7 +49,7 @@ export default async function StorefrontLayout({
                   Login
                 </Link>
               )}
-              <Link href={`${hostPolicy.adminBaseUrl}/admin`} className="hover:underline">
+              <Link href={adminHref} className="hover:underline">
                 Admin
               </Link>
             </nav>

@@ -3,6 +3,7 @@ import { registerEmailPasswordUser } from "@/server/auth/service";
 import { registerInputSchema } from "@/server/auth/validation";
 
 export async function POST(request: Request) {
+  const requestOrigin = new URL(request.url).origin;
   const formData = await request.formData();
   const payload = registerInputSchema.safeParse({
     name: formData.get("name"),
@@ -15,11 +16,13 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await registerEmailPasswordUser(payload.data);
+    const result = await registerEmailPasswordUser({
+      ...payload.data,
+      origin: requestOrigin,
+    });
     return NextResponse.redirect(new URL(result.redirectTo, request.url));
   } catch (error) {
     const message = error instanceof Error ? error.message : "register_failed";
     return NextResponse.redirect(new URL(`/register?error=${encodeURIComponent(message)}`, request.url));
   }
 }
-

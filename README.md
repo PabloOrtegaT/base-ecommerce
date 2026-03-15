@@ -35,6 +35,15 @@ Default local seeded owner account:
 - Email: `owner@base-ecommerce.local`
 - Password: `ChangeMe123!`
 
+Important: these credentials are for local development only (`db:seed` runs against local D1).
+Production does not auto-seed this user. Create your first owner account in production via register/verification flow or a controlled remote seed step.
+
+Seed commands by environment:
+
+- local D1: `npm run db:seed`
+- production D1 (remote): `npm run db:seed:remote`
+- preview D1 (remote preview): `npm run db:seed:remote:preview`
+
 ## Quality checks
 
 ```bash
