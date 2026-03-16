@@ -16,6 +16,8 @@
   "vars": {
     "APP_BASE_URL": "https://spookynexus.com",
     "ADMIN_BASE_URL": "https://admin.spookynexus.com",
+    "NEXTAUTH_URL": "https://spookynexus.com",
+    "NEXTAUTH_URL_INTERNAL": "https://spookynexus.com",
     "ADMIN_REQUIRE_CF_ACCESS": "false"
   },
   "routes": [

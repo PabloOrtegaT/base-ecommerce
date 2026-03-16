@@ -4,7 +4,8 @@ import FacebookProvider from "next-auth/providers/facebook";
 import GoogleProvider from "next-auth/providers/google";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { roleSchema } from "@base-ecommerce/domain";
-import { getRuntimeEnvironment } from "@/server/config/runtime-env";
+import { buildAbsoluteUrl, isAdminPath, resolveHostPolicy } from "@/server/config/host-policy";
+import { getHostRuntimeConfig, getRuntimeEnvironment } from "@/server/config/runtime-env";
 import { getDb } from "@/server/db/client";
 import { accountsTable, usersTable, verificationTokensTable } from "@/server/db/schema";
 import { getAccessTokenWindowSeconds } from "./refresh-session-policy";
@@ -126,6 +127,42 @@ export function getAuthOptions(): NextAuthOptions {
           return true;
         }
         return Boolean((user as { emailVerified?: boolean | undefined }).emailVerified);
+      },
+      async redirect({ url, baseUrl }) {
+        const hostConfig = getHostRuntimeConfig();
+        const policy = resolveHostPolicy({
+          appBaseUrl: hostConfig.appBaseUrl,
+          adminBaseUrl: hostConfig.adminBaseUrl,
+        });
+
+        const allowedOrigins = new Set<string>();
+        try {
+          allowedOrigins.add(new URL(baseUrl).origin);
+        } catch {
+          // Keep behavior deterministic even if baseUrl is malformed.
+        }
+        try {
+          allowedOrigins.add(new URL(policy.appBaseUrl).origin);
+          allowedOrigins.add(new URL(policy.adminBaseUrl).origin);
+        } catch {
+          // Runtime env parser already validates URLs; this is defense-in-depth.
+        }
+
+        if (url.startsWith("/")) {
+          const targetBaseUrl = isAdminPath(url) ? policy.adminBaseUrl : policy.appBaseUrl;
+          return buildAbsoluteUrl(targetBaseUrl, url);
+        }
+
+        try {
+          const target = new URL(url);
+          if (allowedOrigins.has(target.origin)) {
+            return url;
+          }
+        } catch {
+          // Ignore invalid external callback urls.
+        }
+
+        return policy.appBaseUrl;
       },
     },
   };
