@@ -97,6 +97,14 @@ npm run cf:preview
 npm run cf:deploy
 ```
 
+If you are deploying only to `workers.dev` (no custom domain yet), set:
+
+- `APP_BASE_URL=https://<your-worker>.<your-subdomain>.workers.dev`
+- `ADMIN_BASE_URL=https://<your-worker>.<your-subdomain>.workers.dev`
+
+This repository currently defaults both to:
+`https://base-ecommerce.ortegapablo96.workers.dev` in `apps/web/wrangler.jsonc`.
+
 Required environment variables for deploy:
 
 - `CLOUDFLARE_ACCOUNT_ID`

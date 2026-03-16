@@ -13,6 +13,15 @@
       "migrations_dir": "drizzle/migrations"
     }
   ],
+  "vars": {
+    "APP_BASE_URL": "https://spookynexus.com",
+    "ADMIN_BASE_URL": "https://admin.spookynexus.com",
+    "ADMIN_REQUIRE_CF_ACCESS": "false"
+  },
+  "routes": [
+    { "pattern": "spookynexus.com", "custom_domain": true },
+    { "pattern": "admin.spookynexus.com", "custom_domain": true }
+  ],
   "assets": {
     "binding": "ASSETS",
     "directory": ".open-next/assets"
