@@ -4,7 +4,7 @@ import FacebookProvider from "next-auth/providers/facebook";
 import GoogleProvider from "next-auth/providers/google";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { roleSchema } from "@base-ecommerce/domain";
-import { buildAbsoluteUrl, isAdminPath, resolveHostPolicy } from "@/server/config/host-policy";
+import { buildAbsoluteUrl, isAdminPath, resolveHostPolicy, resolveSharedCookieDomain } from "@/server/config/host-policy";
 import { getHostRuntimeConfig, getRuntimeEnvironment } from "@/server/config/runtime-env";
 import { getDb } from "@/server/db/client";
 import { accountsTable, usersTable, verificationTokensTable } from "@/server/db/schema";
@@ -12,9 +12,27 @@ import { getAccessTokenWindowSeconds } from "./refresh-session-policy";
 import { createRefreshSession, getActiveRefreshSessionById } from "./refresh-sessions";
 import { validateCredentials } from "./service";
 
+function shouldUseAdminBaseForRelativeRedirect(pathOrUrl: string) {
+  if (isAdminPath(pathOrUrl)) {
+    return true;
+  }
+
+  if (!pathOrUrl.startsWith("/auth/after-login")) {
+    return false;
+  }
+
+  const parsed = new URL(pathOrUrl, "http://local");
+  const nextPath = parsed.searchParams.get("next");
+  return Boolean(nextPath && isAdminPath(nextPath));
+}
+
 export function getAuthOptions(): NextAuthOptions {
   const env = getRuntimeEnvironment();
   const db = getDb();
+  const hostConfig = getHostRuntimeConfig();
+  const useSecureCookies = hostConfig.appBaseUrl.startsWith("https://") || hostConfig.adminBaseUrl.startsWith("https://");
+  const sharedCookieDomain = resolveSharedCookieDomain(hostConfig.appBaseUrl, hostConfig.adminBaseUrl);
+  const sessionCookieName = useSecureCookies ? "__Secure-next-auth.session-token" : "next-auth.session-token";
   const authSecret =
     env.AUTH_SECRET ??
     (process.env.NODE_ENV === "development" ? "dev-auth-secret-change-me-please-override" : undefined);
@@ -80,6 +98,18 @@ export function getAuthOptions(): NextAuthOptions {
       strategy: "jwt",
       maxAge: getAccessTokenWindowSeconds(),
     },
+    cookies: {
+      sessionToken: {
+        name: sessionCookieName,
+        options: {
+          httpOnly: true,
+          sameSite: "lax",
+          path: "/",
+          secure: useSecureCookies,
+          domain: sharedCookieDomain,
+        },
+      },
+    },
     jwt: {
       maxAge: getAccessTokenWindowSeconds(),
     },
@@ -129,7 +159,6 @@ export function getAuthOptions(): NextAuthOptions {
         return Boolean((user as { emailVerified?: boolean | undefined }).emailVerified);
       },
       async redirect({ url, baseUrl }) {
-        const hostConfig = getHostRuntimeConfig();
         const policy = resolveHostPolicy({
           appBaseUrl: hostConfig.appBaseUrl,
           adminBaseUrl: hostConfig.adminBaseUrl,
@@ -149,7 +178,7 @@ export function getAuthOptions(): NextAuthOptions {
         }
 
         if (url.startsWith("/")) {
-          const targetBaseUrl = isAdminPath(url) ? policy.adminBaseUrl : policy.appBaseUrl;
+          const targetBaseUrl = shouldUseAdminBaseForRelativeRedirect(url) ? policy.adminBaseUrl : policy.appBaseUrl;
           return buildAbsoluteUrl(targetBaseUrl, url);
         }
 

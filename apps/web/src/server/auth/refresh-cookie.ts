@@ -2,7 +2,13 @@ import type { ResponseCookies } from "next/dist/server/web/spec-extension/cookie
 import { cookies } from "next/headers";
 import type { NextRequest } from "next/server";
 import type { HostSurface } from "@/server/config/host-policy";
-import { isLocalDevelopmentHost, normalizeHost, resolveHostPolicy, resolveSurfaceForHost } from "@/server/config/host-policy";
+import {
+  isLocalDevelopmentHost,
+  normalizeHost,
+  resolveHostPolicy,
+  resolveSharedCookieDomain,
+  resolveSurfaceForHost,
+} from "@/server/config/host-policy";
 import { getAuthRuntimeConfig, getHostRuntimeConfig } from "@/server/config/runtime-env";
 
 export const STOREFRONT_REFRESH_COOKIE = "be_refresh_storefront";
@@ -61,6 +67,8 @@ export async function readRefreshTokenForCurrentRequest(surface?: HostSurface) {
 }
 
 export function setRefreshCookie(responseCookies: ResponseCookies, surface: HostSurface, token: string, host: string) {
+  const hostConfig = getHostRuntimeConfig();
+  const cookieDomain = resolveSharedCookieDomain(hostConfig.appBaseUrl, hostConfig.adminBaseUrl);
   responseCookies.set({
     name: getRefreshCookieName(surface),
     value: token,
@@ -69,10 +77,13 @@ export function setRefreshCookie(responseCookies: ResponseCookies, surface: Host
     sameSite: "lax",
     path: "/",
     maxAge: resolveRefreshCookieMaxAgeSeconds(surface),
+    domain: cookieDomain,
   });
 }
 
 export function clearRefreshCookie(responseCookies: ResponseCookies, surface: HostSurface, host: string) {
+  const hostConfig = getHostRuntimeConfig();
+  const cookieDomain = resolveSharedCookieDomain(hostConfig.appBaseUrl, hostConfig.adminBaseUrl);
   responseCookies.set({
     name: getRefreshCookieName(surface),
     value: "",
@@ -81,10 +92,13 @@ export function clearRefreshCookie(responseCookies: ResponseCookies, surface: Ho
     sameSite: "lax",
     path: "/",
     maxAge: 0,
+    domain: cookieDomain,
   });
 }
 
 export function clearAllRefreshCookies(responseCookies: ResponseCookies, host: string) {
+  const hostConfig = getHostRuntimeConfig();
+  const cookieDomain = resolveSharedCookieDomain(hostConfig.appBaseUrl, hostConfig.adminBaseUrl);
   for (const cookieName of getAllRefreshCookieNames()) {
     responseCookies.set({
       name: cookieName,
@@ -94,6 +108,7 @@ export function clearAllRefreshCookies(responseCookies: ResponseCookies, host: s
       sameSite: "lax",
       path: "/",
       maxAge: 0,
+      domain: cookieDomain,
     });
   }
 }

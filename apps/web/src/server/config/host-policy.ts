@@ -97,3 +97,49 @@ export function isLocalDevelopmentHost(host: string) {
   const normalized = normalizeHost(host);
   return normalized === "localhost" || normalized === "127.0.0.1" || normalized.endsWith(".lvh.me");
 }
+
+function parseHostnameFromUrl(urlValue: string) {
+  try {
+    return new URL(urlValue).hostname.toLowerCase();
+  } catch {
+    return "";
+  }
+}
+
+function registrableLikeDomain(hostname: string) {
+  const segments = normalizeHost(hostname)
+    .split(".")
+    .filter(Boolean);
+  if (segments.length < 2) {
+    return "";
+  }
+  return segments.slice(-2).join(".");
+}
+
+export function resolveSharedCookieDomain(appBaseUrl: string, adminBaseUrl: string) {
+  const appHostname = parseHostnameFromUrl(appBaseUrl);
+  const adminHostname = parseHostnameFromUrl(adminBaseUrl);
+  if (!appHostname || !adminHostname || appHostname === adminHostname) {
+    return undefined;
+  }
+
+  const blockedHosts = new Set(["localhost", "127.0.0.1", "::1"]);
+  if (blockedHosts.has(appHostname) || blockedHosts.has(adminHostname)) {
+    return undefined;
+  }
+
+  if (appHostname.endsWith(`.${adminHostname}`)) {
+    return `.${adminHostname}`;
+  }
+  if (adminHostname.endsWith(`.${appHostname}`)) {
+    return `.${appHostname}`;
+  }
+
+  const appRegistrable = registrableLikeDomain(appHostname);
+  const adminRegistrable = registrableLikeDomain(adminHostname);
+  if (!appRegistrable || appRegistrable !== adminRegistrable) {
+    return undefined;
+  }
+
+  return `.${appRegistrable}`;
+}

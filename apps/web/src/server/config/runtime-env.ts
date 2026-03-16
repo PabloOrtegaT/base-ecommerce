@@ -96,8 +96,8 @@ function readRawEnvironment(): MaybeCloudflareEnv {
   try {
     const context = getCloudflareContext();
     return {
-      ...processEnv,
       ...(context.env as MaybeCloudflareEnv),
+      ...processEnv,
     };
   } catch {
     return processEnv;

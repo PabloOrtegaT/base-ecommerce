@@ -26,8 +26,12 @@ const command = [
   `VALUES ('${userId}','${escapedEmail}','Dev Owner','owner','${escapedHash}',${now},${now},${now});`,
   `UPDATE "user" SET "name"='Dev Owner',"role"='owner',"passwordHash"='${escapedHash}',"emailVerified"=${now},"updatedAt"=${now}`,
   `WHERE "email"='${escapedEmail}';`,
+  `DELETE FROM "authRefreshSession"`,
+  `WHERE "userId"=(SELECT "id" FROM "user" WHERE "email"='${escapedEmail}' LIMIT 1);`,
   `INSERT OR IGNORE INTO "cart" ("id","userId","createdAt","updatedAt")`,
   `SELECT '${cartId}', "id", ${now}, ${now} FROM "user" WHERE "email"='${escapedEmail}';`,
+  `DELETE FROM "cartItem"`,
+  `WHERE "cartId"=(SELECT "id" FROM "cart" WHERE "userId"=(SELECT "id" FROM "user" WHERE "email"='${escapedEmail}' LIMIT 1) LIMIT 1);`,
   `UPDATE "cart" SET "updatedAt"=${now}`,
   `WHERE "userId"=(SELECT "id" FROM "user" WHERE "email"='${escapedEmail}' LIMIT 1);`,
 ].join(" ");
