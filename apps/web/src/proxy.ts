@@ -15,7 +15,7 @@ function getHostPolicy() {
   });
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const policy = getHostPolicy();
   if (!policy.appHost || !policy.adminHost || policy.appHost === policy.adminHost) {
     return NextResponse.next();
