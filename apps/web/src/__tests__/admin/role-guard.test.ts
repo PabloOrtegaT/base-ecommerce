@@ -4,6 +4,7 @@ import { canAccessAdminPermission, canAccessAdminRoute, isAdminRole } from "@/se
 describe("admin route guards", () => {
   it("owner can access all admin routes", () => {
     expect(canAccessAdminRoute("owner", "dashboard")).toBe(true);
+    expect(canAccessAdminRoute("owner", "categories")).toBe(true);
     expect(canAccessAdminRoute("owner", "products")).toBe(true);
     expect(canAccessAdminRoute("owner", "content")).toBe(true);
     expect(canAccessAdminRoute("owner", "coupons")).toBe(true);
@@ -12,6 +13,7 @@ describe("admin route guards", () => {
 
   it("catalog role cannot access any admin route", () => {
     expect(canAccessAdminRoute("catalog", "dashboard")).toBe(false);
+    expect(canAccessAdminRoute("catalog", "categories")).toBe(false);
     expect(canAccessAdminRoute("catalog", "content")).toBe(false);
     expect(canAccessAdminRoute("catalog", "coupons")).toBe(false);
     expect(canAccessAdminRoute("catalog", "products")).toBe(false);
@@ -20,6 +22,7 @@ describe("admin route guards", () => {
 
   it("manager can access allowed admin routes", () => {
     expect(canAccessAdminRoute("manager", "dashboard")).toBe(true);
+    expect(canAccessAdminRoute("manager", "categories")).toBe(true);
     expect(canAccessAdminRoute("manager", "products")).toBe(true);
     expect(canAccessAdminRoute("manager", "content")).toBe(true);
     expect(canAccessAdminRoute("manager", "coupons")).toBe(true);

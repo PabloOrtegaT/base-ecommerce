@@ -1,6 +1,7 @@
 import type { ColumnDef, Row } from "@tanstack/react-table";
 import { formatCurrencyCents, formatDateTimeLabel, numericSort, textSort } from "./format";
 import type {
+  AdminCategoryRow,
   AdminContentRow,
   AdminCouponRow,
   AdminOrderRow,
@@ -49,6 +50,29 @@ export const productColumns: ColumnDef<AdminProductRow>[] = [
     header: "Updated",
     sortingFn: textColumnSort,
     cell: ({ getValue }) => formatDateTimeLabel(getValue<string>()),
+  },
+];
+
+export const categoryColumns: ColumnDef<AdminCategoryRow>[] = [
+  {
+    accessorKey: "name",
+    header: "Category",
+    sortingFn: textColumnSort,
+  },
+  {
+    accessorKey: "slug",
+    header: "Slug",
+    sortingFn: textColumnSort,
+  },
+  {
+    accessorKey: "templateKey",
+    header: "Template",
+    sortingFn: textColumnSort,
+  },
+  {
+    accessorKey: "attributeCount",
+    header: "Attributes",
+    sortingFn: numberColumnSort,
   },
 ];
 

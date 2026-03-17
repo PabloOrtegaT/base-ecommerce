@@ -2,7 +2,7 @@
 
 ## Problem solved
 
-Users add items before logging in. After login, cart contents must be merged into the authenticated server cart without losing intent or violating stock constraints.
+Users add items before logging in and continue editing quantities quickly. Cart state must remain stable without request spam, and server stock must be authoritative after login and during normal authenticated updates.
 
 ## User roles and actors
 
@@ -17,6 +17,7 @@ Users add items before logging in. After login, cart contents must be merged int
 3. System redirects to `/auth/sync-cart`.
 4. Guest cart is posted to merge endpoint.
 5. Merged cart is persisted server-side and reflected on `/cart`.
+6. After login, quantity changes in `/cart` use in-flight locking and trailing sync.
 6. In local E2E runs, use split hosts:
    - storefront: `http://storefront.lvh.me:3000`
    - admin: `http://admin.lvh.me:3000`
@@ -29,6 +30,9 @@ Users add items before logging in. After login, cart contents must be merged int
 - Quantities merge and clamp to available stock.
 - Unavailable lines are kept with warning reason and excluded from checkout subtotal.
 - Merge summary reports merged/adjusted/unavailable outcomes.
+- Authenticated cart writes (`POST /api/cart`) also run server reconciliation (same clamp/unavailable policy) and return canonical cart + sync summary.
+- Client store keeps one in-flight sync and coalesces rapid changes into a trailing latest snapshot.
+- Product page uses `/api/catalog/availability?variantId=...` to disable add-to-cart when no stock is purchasable.
 - Local E2E startup runs D1 migration + seed before server boot to keep merge test fixtures deterministic.
 - Local seed resets owner refresh sessions and cart lines so merge test baselines remain deterministic across reruns.
 
@@ -61,6 +65,7 @@ Users add items before logging in. After login, cart contents must be merged int
 
 - Variant removed after guest add.
 - Variant stock drops below merged quantity.
+- Rapid quantity clicks causing duplicate writes.
 - Invalid guest-cart payload.
 - Merge request retries/replays.
 

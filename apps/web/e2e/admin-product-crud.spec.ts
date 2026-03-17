@@ -8,8 +8,12 @@ test("admin product create and edit flow", async ({ page }) => {
 
   const suffix = Date.now().toString(36);
   const productName = `E2E Admin Product ${suffix}`;
+  const productSlug = `e2e-admin-product-${suffix}`;
+  const baseSku = `E2E_ADMIN_${suffix.toUpperCase()}`;
   const createForm = page.getByTestId("create-product-form");
   await createForm.getByLabel("Name").fill(productName);
+  await createForm.getByLabel("Slug").fill(productSlug);
+  await createForm.getByLabel("Base SKU").fill(baseSku);
   await createForm.getByLabel("Price (cents)").fill("45900");
   await createForm.getByLabel("Initial stock").fill("8");
   await createForm.getByRole("button", { name: "Create product" }).click();

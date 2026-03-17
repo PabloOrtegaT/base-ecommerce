@@ -5,11 +5,12 @@ import { getAuthRuntimeConfig, getHostRuntimeConfig } from "@/server/config/runt
 import { getSessionUser } from "@/server/auth/session";
 import { isRecentAuthentication } from "@/server/auth/refresh-session-policy";
 
-export const adminRouteKeys = ["dashboard", "products", "content", "coupons", "import"] as const;
+export const adminRouteKeys = ["dashboard", "categories", "products", "content", "coupons", "import"] as const;
 export type AdminRouteKey = (typeof adminRouteKeys)[number];
 
 const routePermissions: Record<AdminRouteKey, Permission> = {
   dashboard: "content:read",
+  categories: "catalog:read",
   products: "catalog:read",
   content: "content:read",
   coupons: "orders:write",

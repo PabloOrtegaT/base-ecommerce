@@ -1,17 +1,31 @@
-import type { CouponType, Currency, ProductStatus } from "@base-ecommerce/domain";
+import type { CouponType, Currency, ProductStatus, StoreProfile } from "@base-ecommerce/domain";
 
 export type AdminProductRow = {
   id: string;
   name: string;
   slug: string;
+  description?: string;
+  categoryId: string;
+  baseSku: string;
   status: ProductStatus;
   categoryName: string;
   categorySlug: string;
   priceCents: number;
+  compareAtPriceCents?: number;
+  tags: string[];
   currency: Currency;
   stockOnHand: number;
   variantCount: number;
   updatedAt: string;
+};
+
+export type AdminCategoryRow = {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  templateKey: StoreProfile;
+  attributeCount: number;
 };
 
 export type AdminVariantRow = {
@@ -21,6 +35,7 @@ export type AdminVariantRow = {
   sku: string;
   name: string;
   priceCents: number;
+  compareAtPriceCents?: number;
   currency: Currency;
   stockOnHand: number;
   isDefault: boolean;

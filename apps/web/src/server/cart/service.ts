@@ -110,7 +110,7 @@ export async function replaceUserCart(userId: string, cart: CartState) {
     .where(eq(cartsTable.id, cartId));
 }
 
-function resolveVariantFromActiveCatalog(variantId: string): VariantResolution {
+export function resolveVariantFromActiveCatalog(variantId: string): VariantResolution {
   const profile = getActiveStoreProfile();
   const store = getProfileRuntimeStore(profile);
   const variant = store.variants.find((entry) => entry.id === variantId);
@@ -163,6 +163,35 @@ function resolveVariantFromActiveCatalog(variantId: string): VariantResolution {
       stockOnHand: variant.stockOnHand,
     },
     stockOnHand: variant.stockOnHand,
+  };
+}
+
+export async function reconcileCartState(cart: CartState): Promise<{
+  cart: CartState;
+  summary: CartMergeSummary;
+}> {
+  return mergeCartStates({
+    guestCart: cart,
+    serverCart: { items: [] },
+    resolveVariant: resolveVariantFromActiveCatalog,
+  });
+}
+
+export function getVariantAvailability(variantId: string) {
+  const resolution = resolveVariantFromActiveCatalog(variantId);
+  if (resolution.status === "available") {
+    return {
+      variantId,
+      stockOnHand: resolution.stockOnHand,
+      isPurchasable: true,
+    };
+  }
+
+  return {
+    variantId,
+    stockOnHand: resolution.fallbackItem?.stockOnHand ?? 0,
+    isPurchasable: false,
+    reason: resolution.reason,
   };
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Button } from "@base-ecommerce/ui";
 import { calculateCartTotals } from "@/features/cart/cart";
@@ -25,6 +25,13 @@ type ProductPurchasePanelProps = {
   variants: VariantItem[];
 };
 
+type VariantAvailability = {
+  variantId: string;
+  stockOnHand: number;
+  isPurchasable: boolean;
+  reason?: string;
+};
+
 export function ProductPurchasePanel({
   productId,
   productName,
@@ -34,14 +41,55 @@ export function ProductPurchasePanel({
   variants,
 }: ProductPurchasePanelProps) {
   const addItem = useCartStore((state) => state.addItem);
+  const pendingVariantIds = useCartStore((state) => state.pendingVariantIds);
   const [selectedVariantId, setSelectedVariantId] = useState(variants[0]?.id ?? "");
   const [quantity, setQuantity] = useState(1);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [availability, setAvailability] = useState<VariantAvailability | null>(null);
+  const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
 
   const selectedVariant = useMemo(
     () => variants.find((variant) => variant.id === selectedVariantId) ?? variants[0] ?? null,
     [selectedVariantId, variants],
   );
+
+  useEffect(() => {
+    if (!selectedVariant) {
+      return;
+    }
+
+    const controller = new AbortController();
+    const run = async () => {
+      setIsCheckingAvailability(true);
+      try {
+        const url = new URL("/api/catalog/availability", window.location.origin);
+        url.searchParams.set("variantId", selectedVariant.id);
+        const response = await fetch(url, { method: "GET", signal: controller.signal });
+        if (!response.ok) {
+          setAvailability(null);
+          return;
+        }
+        const payload = (await response.json()) as VariantAvailability;
+        setAvailability(payload);
+      } catch {
+        setAvailability(null);
+      } finally {
+        setIsCheckingAvailability(false);
+      }
+    };
+
+    void run();
+    return () => controller.abort();
+  }, [selectedVariant]);
+
+  useEffect(() => {
+    if (!selectedVariant) {
+      return;
+    }
+    const resolvedStock =
+      availability && availability.variantId === selectedVariant.id ? availability.stockOnHand : selectedVariant.stockOnHand;
+    setQuantity((current) => Math.max(1, Math.min(current, Math.max(1, resolvedStock))));
+  }, [availability, selectedVariant]);
 
   if (!selectedVariant) {
     return (
@@ -52,9 +100,23 @@ export function ProductPurchasePanel({
   }
 
   const price = getPriceDisplay(selectedVariant.priceCents, selectedVariant.compareAtPriceCents);
-  const isOutOfStock = selectedVariant.stockOnHand <= 0;
+  const resolvedAvailability =
+    availability && availability.variantId === selectedVariant.id
+      ? availability
+      : {
+          variantId: selectedVariant.id,
+          stockOnHand: selectedVariant.stockOnHand,
+          isPurchasable: selectedVariant.stockOnHand > 0,
+        };
+  const resolvedStock = resolvedAvailability.stockOnHand;
+  const isOutOfStock = !resolvedAvailability.isPurchasable || resolvedStock <= 0;
+  const isPending = pendingVariantIds.includes(selectedVariant.id);
+  const canAddToCart = !isOutOfStock && !isPending && !isCheckingAvailability && quantity <= resolvedStock;
 
   const onAddToCart = () => {
+    if (!canAddToCart) {
+      return;
+    }
     addItem(
       {
         productId,
@@ -64,7 +126,7 @@ export function ProductPurchasePanel({
         href: `/catalog/${categorySlug}/${productSlug}`,
         currency,
         unitPriceCents: selectedVariant.priceCents,
-        stockOnHand: selectedVariant.stockOnHand,
+        stockOnHand: resolvedStock,
       },
       quantity,
     );
@@ -116,8 +178,9 @@ export function ProductPurchasePanel({
       <div className="space-y-1">
         <p className="text-sm text-muted-foreground">Stock</p>
         <p data-testid="stock-status" className="text-sm">
-          {isOutOfStock ? "Out of stock" : `${selectedVariant.stockOnHand} available`}
+          {isOutOfStock ? "Out of stock" : `${resolvedStock} available`}
         </p>
+        {resolvedAvailability.reason && <p className="text-xs text-muted-foreground">{resolvedAvailability.reason}</p>}
       </div>
 
       <div className="space-y-1">
@@ -135,11 +198,11 @@ export function ProductPurchasePanel({
             if (Number.isNaN(parsed)) {
               return;
             }
-            const bounded = Math.max(1, Math.min(parsed, Math.max(1, selectedVariant.stockOnHand)));
+            const bounded = Math.max(1, Math.min(parsed, Math.max(1, resolvedStock)));
             setQuantity(bounded);
           }}
           className="w-24 rounded-md border bg-background px-3 py-2 text-sm"
-          disabled={isOutOfStock}
+          disabled={isOutOfStock || isPending || isCheckingAvailability}
         />
       </div>
 
@@ -147,8 +210,8 @@ export function ProductPurchasePanel({
         <Button
           data-testid="add-to-cart"
           onClick={onAddToCart}
-          disabled={isOutOfStock}
-          aria-disabled={isOutOfStock}
+          disabled={!canAddToCart}
+          aria-disabled={!canAddToCart}
         >
           Add to cart
         </Button>
@@ -158,6 +221,7 @@ export function ProductPurchasePanel({
       </div>
 
       {feedback && <p className="text-sm text-muted-foreground">{feedback}</p>}
+      {isPending && <p className="text-xs text-muted-foreground">Syncing this variant in your cart...</p>}
     </section>
   );
 }

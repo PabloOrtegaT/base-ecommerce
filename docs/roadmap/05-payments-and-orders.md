@@ -115,6 +115,14 @@ Implement customer identity flows and reliable checkout with cart continuity, or
   - Emit merge summary for UX (merged, adjusted, unavailable lines).
 - Add unit-tested pure merge engine and server-side merge endpoint/action.
 - Add Zustand store only for client session/cart UX state and merge-feedback UI; keep server/order/payment data outside Zustand.
+- Harden cart writes with request coalescing and in-flight line locks:
+  - Single in-flight cart sync with trailing latest snapshot.
+  - Per-line pending state for quantity controls.
+- Reconcile stock on every authenticated cart write (`POST /api/cart`), not only login merge:
+  - Clamp over-limit quantities.
+  - Preserve unavailable lines with warnings.
+  - Return canonical cart + sync summary payload.
+- Add lightweight variant availability endpoint for product pages and disable add-to-cart when availability is exhausted.
 - Define payment provider abstraction layer.
 - Keep card flow as default/primary checkout option and render optional methods as secondary options.
 - Add risk controls:

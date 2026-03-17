@@ -8,6 +8,7 @@ export const dynamic = "force-dynamic";
 
 const adminNavigation: { href: string; label: string; route: AdminRouteKey }[] = [
   { href: "/admin", label: "Dashboard", route: "dashboard" },
+  { href: "/admin/categories", label: "Categories", route: "categories" },
   { href: "/admin/products", label: "Products", route: "products" },
   { href: "/admin/content", label: "Content", route: "content" },
   { href: "/admin/coupons", label: "Coupons", route: "coupons" },

@@ -19,10 +19,12 @@ import {
   createProductInputSchema,
   createPromoBannerInputSchema,
   createVariantInputSchema,
+  updateCategoryInputSchema,
   updateProductInputSchema,
   updateVariantInputSchema,
 } from "@base-ecommerce/validation";
 import type {
+  AdminCategoryRow,
   AdminContentRow,
   AdminCouponRow,
   AdminOrderRow,
@@ -65,6 +67,15 @@ function ensureUniqueText(candidate: string, existing: Set<string>) {
   return next;
 }
 
+function normalizeSku(value: string) {
+  return value
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9_]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 64);
+}
+
 function getActiveProfileContext() {
   const profile = getActiveStoreProfile();
   const store = getProfileRuntimeStore(profile);
@@ -73,12 +84,18 @@ function getActiveProfileContext() {
   return { profile, store, categoryById, productById };
 }
 
-export function listAdminCategories() {
+export function listAdminCategories(): AdminCategoryRow[] {
   const { store } = getActiveProfileContext();
-  return store.categories.map((category) => ({
-    ...category,
-    attributeCount: getCategoryAttributeDefinitions(category.templateKey).length,
-  }));
+  return store.categories.map((category) => {
+    return {
+      id: category.id,
+      name: category.name,
+      slug: category.slug,
+      templateKey: category.templateKey,
+      ...(category.description ? { description: category.description } : {}),
+      attributeCount: getCategoryAttributeDefinitions(category.templateKey).length,
+    };
+  });
 }
 
 export function listAdminCategoryAttributes() {
@@ -90,7 +107,7 @@ export function listAdminCategoryAttributes() {
   }));
 }
 
-export function createAdminCategory(input: { name: string; slug?: string }) {
+export function createAdminCategory(input: { name: string; slug?: string; description?: string }) {
   const { profile, store } = getActiveProfileContext();
   const slugCandidate = slugify(input.slug && input.slug.length > 0 ? input.slug : input.name);
   const existingSlugs = new Set(store.categories.map((category) => category.slug));
@@ -98,6 +115,7 @@ export function createAdminCategory(input: { name: string; slug?: string }) {
   const parsed = createCategoryInputSchema.parse({
     slug,
     name: input.name.trim(),
+    ...(input.description ? { description: input.description.trim() } : {}),
     templateKey: profile,
   });
 
@@ -108,6 +126,40 @@ export function createAdminCategory(input: { name: string; slug?: string }) {
 
   store.categories.push(category);
   return category;
+}
+
+export function updateAdminCategory(input: { id: string; name: string; slug: string; description?: string }) {
+  const { profile, store } = getActiveProfileContext();
+  const categoryIndex = store.categories.findIndex((category) => category.id === input.id);
+  if (categoryIndex < 0) {
+    throw new Error("Category not found.");
+  }
+
+  const currentCategory = store.categories[categoryIndex];
+  if (!currentCategory) {
+    throw new Error("Category not found.");
+  }
+
+  const existingSlugs = new Set(store.categories.filter((category) => category.id !== input.id).map((category) => category.slug));
+  const nextSlug = ensureUniqueText(slugify(input.slug), existingSlugs);
+
+  updateCategoryInputSchema.parse({
+    id: currentCategory.id,
+    name: input.name.trim(),
+    slug: nextSlug,
+    ...(input.description ? { description: input.description.trim() } : {}),
+    templateKey: profile,
+  });
+
+  const updatedCategory = categorySchema.parse({
+    ...currentCategory,
+    name: input.name.trim(),
+    slug: nextSlug,
+    ...(input.description ? { description: input.description.trim() } : { description: undefined }),
+    templateKey: profile,
+  });
+  store.categories[categoryIndex] = updatedCategory;
+  return updatedCategory;
 }
 
 export function listAdminProducts(): AdminProductRow[] {
@@ -131,14 +183,19 @@ export function listAdminProducts(): AdminProductRow[] {
       id: product.id,
       name: product.name,
       slug: product.slug,
+      categoryId: product.categoryId,
+      baseSku: product.baseSku,
       status: product.status,
       categoryName: category?.name ?? "Unknown",
       categorySlug: category?.slug ?? "unknown",
       priceCents: product.priceCents,
+      tags: product.tags,
       currency: product.currency,
       stockOnHand,
       variantCount: variants.length,
       updatedAt: product.updatedAt,
+      ...(product.description ? { description: product.description } : {}),
+      ...(typeof product.compareAtPriceCents === "number" ? { compareAtPriceCents: product.compareAtPriceCents } : {}),
     };
   });
 }
@@ -158,6 +215,7 @@ export function listAdminVariants(): AdminVariantRow[] {
       stockOnHand: variant.stockOnHand,
       isDefault: variant.isDefault,
       updatedAt: variant.updatedAt,
+      ...(typeof variant.compareAtPriceCents === "number" ? { compareAtPriceCents: variant.compareAtPriceCents } : {}),
     };
   });
 }
@@ -288,8 +346,13 @@ export function listAdminDashboardAnalytics() {
 export function createAdminProduct(input: {
   name: string;
   categoryId: string;
+  slug: string;
+  description?: string;
+  baseSku: string;
   priceCents: number;
+  compareAtPriceCents?: number;
   stockOnHand: number;
+  tags: string[];
   currency: Currency;
   status: ProductStatus;
 }) {
@@ -302,20 +365,22 @@ export function createAdminProduct(input: {
   const existingProductSlugs = new Set(store.products.map((product) => product.slug));
   const existingSkus = new Set(store.products.map((product) => product.baseSku));
 
-  const slug = ensureUniqueText(slugify(input.name), existingProductSlugs);
-  const baseSku = ensureUniqueText(slug.toUpperCase().replace(/-/g, "_"), existingSkus);
+  const slug = ensureUniqueText(slugify(input.slug), existingProductSlugs);
+  const baseSku = ensureUniqueText(normalizeSku(input.baseSku), existingSkus);
 
   createProductInputSchema.parse({
     categoryId: category.id,
     categoryTemplateKey: category.templateKey,
     name: input.name,
     slug,
+    ...(input.description ? { description: input.description } : {}),
     baseSku,
     status: input.status,
     currency: input.currency,
     priceCents: input.priceCents,
+    ...(typeof input.compareAtPriceCents === "number" ? { compareAtPriceCents: input.compareAtPriceCents } : {}),
     attributeValues: {},
-    tags: [],
+    tags: input.tags,
   });
 
   const createdAt = nowIso();
@@ -324,13 +389,13 @@ export function createAdminProduct(input: {
     categoryId: category.id,
     name: input.name.trim(),
     slug,
-    description: undefined,
+    ...(input.description ? { description: input.description.trim() } : { description: undefined }),
     baseSku,
     status: input.status,
     currency: input.currency,
     priceCents: input.priceCents,
-    compareAtPriceCents: undefined,
-    tags: [],
+    ...(typeof input.compareAtPriceCents === "number" ? { compareAtPriceCents: input.compareAtPriceCents } : { compareAtPriceCents: undefined }),
+    tags: input.tags,
     createdAt,
     updatedAt: createdAt,
   });
@@ -339,10 +404,10 @@ export function createAdminProduct(input: {
   const variant = productVariantSchema.parse({
     id: crypto.randomUUID(),
     productId: product.id,
-    sku: `${baseSku}_DEFAULT`,
+    sku: ensureUniqueText(`${baseSku}_DEFAULT`, new Set(store.variants.map((variantEntry) => variantEntry.sku))),
     name: "Default",
     priceCents: input.priceCents,
-    compareAtPriceCents: undefined,
+    ...(typeof input.compareAtPriceCents === "number" ? { compareAtPriceCents: input.compareAtPriceCents } : { compareAtPriceCents: undefined }),
     stockOnHand: input.stockOnHand,
     isDefault: true,
     attributeValues: {},
@@ -356,8 +421,15 @@ export function createAdminProduct(input: {
 
 export function updateAdminProduct(input: {
   id: string;
+  categoryId: string;
   name: string;
+  slug: string;
+  description?: string;
+  baseSku: string;
+  currency: Currency;
   priceCents: number;
+  compareAtPriceCents?: number;
+  tags: string[];
   status: ProductStatus;
 }) {
   const { store, categoryById } = getActiveProfileContext();
@@ -370,26 +442,44 @@ export function updateAdminProduct(input: {
   if (!currentProduct) {
     throw new Error("Product not found.");
   }
-  const category = categoryById.get(currentProduct.categoryId);
+  const category = categoryById.get(input.categoryId);
   if (!category) {
     throw new Error("Category not found.");
   }
+
+  const existingSlugs = new Set(store.products.filter((product) => product.id !== currentProduct.id).map((product) => product.slug));
+  const existingSkus = new Set(store.products.filter((product) => product.id !== currentProduct.id).map((product) => product.baseSku));
+  const nextSlug = ensureUniqueText(slugify(input.slug), existingSlugs);
+  const nextBaseSku = ensureUniqueText(normalizeSku(input.baseSku), existingSkus);
 
   updateProductInputSchema.parse({
     id: currentProduct.id,
     categoryId: category.id,
     categoryTemplateKey: category.templateKey,
     name: input.name,
+    slug: nextSlug,
+    ...(input.description ? { description: input.description } : {}),
+    baseSku: nextBaseSku,
+    currency: input.currency,
     status: input.status,
     priceCents: input.priceCents,
+    ...(typeof input.compareAtPriceCents === "number" ? { compareAtPriceCents: input.compareAtPriceCents } : {}),
+    tags: input.tags,
   });
 
   const updatedAt = nowIso();
   const nextProduct = productSchema.parse({
     ...currentProduct,
+    categoryId: category.id,
     name: input.name.trim(),
+    slug: nextSlug,
+    ...(input.description ? { description: input.description.trim() } : { description: undefined }),
+    baseSku: nextBaseSku,
+    currency: input.currency,
     status: input.status,
     priceCents: input.priceCents,
+    ...(typeof input.compareAtPriceCents === "number" ? { compareAtPriceCents: input.compareAtPriceCents } : { compareAtPriceCents: undefined }),
+    tags: input.tags,
     updatedAt,
   });
   store.products[productIndex] = nextProduct;
@@ -405,6 +495,7 @@ export function updateAdminProduct(input: {
     store.variants[defaultVariantIndex] = productVariantSchema.parse({
       ...defaultVariant,
       priceCents: input.priceCents,
+      ...(typeof input.compareAtPriceCents === "number" ? { compareAtPriceCents: input.compareAtPriceCents } : { compareAtPriceCents: undefined }),
       updatedAt,
     });
   }
@@ -415,7 +506,9 @@ export function updateAdminProduct(input: {
 export function createAdminVariant(input: {
   productId: string;
   name: string;
+  sku: string;
   priceCents: number;
+  compareAtPriceCents?: number;
   stockOnHand: number;
   isDefault: boolean;
 }) {
@@ -426,14 +519,14 @@ export function createAdminVariant(input: {
   }
 
   const existingVariantSkus = new Set(store.variants.map((variant) => variant.sku));
-  const skuCandidate = `${product.baseSku}_${slugify(input.name).toUpperCase().replace(/-/g, "_")}`;
-  const sku = ensureUniqueText(skuCandidate, existingVariantSkus);
+  const sku = ensureUniqueText(normalizeSku(input.sku), existingVariantSkus);
 
   createVariantInputSchema.parse({
     productId: product.id,
     sku,
     name: input.name,
     priceCents: input.priceCents,
+    ...(typeof input.compareAtPriceCents === "number" ? { compareAtPriceCents: input.compareAtPriceCents } : {}),
     stockOnHand: input.stockOnHand,
     isDefault: input.isDefault,
     attributeValues: {},
@@ -452,7 +545,7 @@ export function createAdminVariant(input: {
     sku,
     name: input.name.trim(),
     priceCents: input.priceCents,
-    compareAtPriceCents: undefined,
+    ...(typeof input.compareAtPriceCents === "number" ? { compareAtPriceCents: input.compareAtPriceCents } : { compareAtPriceCents: undefined }),
     stockOnHand: input.stockOnHand,
     isDefault: input.isDefault,
     attributeValues: {},
@@ -466,8 +559,10 @@ export function createAdminVariant(input: {
 
 export function updateAdminVariant(input: {
   id: string;
+  sku: string;
   name: string;
   priceCents: number;
+  compareAtPriceCents?: number;
   stockOnHand: number;
   isDefault: boolean;
 }) {
@@ -481,10 +576,15 @@ export function updateAdminVariant(input: {
   if (!currentVariant) {
     throw new Error("Variant not found.");
   }
+  const existingSkus = new Set(store.variants.filter((variant) => variant.id !== currentVariant.id).map((variant) => variant.sku));
+  const nextSku = ensureUniqueText(normalizeSku(input.sku), existingSkus);
+
   updateVariantInputSchema.parse({
     id: currentVariant.id,
+    sku: nextSku,
     name: input.name,
     priceCents: input.priceCents,
+    ...(typeof input.compareAtPriceCents === "number" ? { compareAtPriceCents: input.compareAtPriceCents } : {}),
     stockOnHand: input.stockOnHand,
     isDefault: input.isDefault,
   });
@@ -497,8 +597,10 @@ export function updateAdminVariant(input: {
 
   const updatedVariant = productVariantSchema.parse({
     ...currentVariant,
+    sku: nextSku,
     name: input.name.trim(),
     priceCents: input.priceCents,
+    ...(typeof input.compareAtPriceCents === "number" ? { compareAtPriceCents: input.compareAtPriceCents } : { compareAtPriceCents: undefined }),
     stockOnHand: input.stockOnHand,
     isDefault: input.isDefault,
     updatedAt: nowIso(),

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/server/auth/session";
-import { getUserCart, replaceUserCart } from "@/server/cart/service";
+import { getUserCart, reconcileCartState, replaceUserCart } from "@/server/cart/service";
 import { cartStateSchema, normalizeParsedCartState } from "@/server/cart/validation";
 
 export async function GET() {
@@ -25,7 +25,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid cart payload." }, { status: 400 });
   }
 
-  const cart = normalizeParsedCartState(parsed.data);
-  await replaceUserCart(user.id, cart);
-  return NextResponse.json({ cart });
+  const requestedCart = normalizeParsedCartState(parsed.data);
+  const reconciled = await reconcileCartState(requestedCart);
+  await replaceUserCart(user.id, reconciled.cart);
+  return NextResponse.json(reconciled);
 }

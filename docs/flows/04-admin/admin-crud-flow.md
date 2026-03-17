@@ -2,7 +2,7 @@
 
 ## Problem solved
 
-Operations teams need one admin surface to manage profile-scoped catalog and home content without mixing vertical data.
+Operations teams need explicit admin surfaces to manage profile-scoped catalog and home content without mixing vertical data.
 
 ## User roles and actors
 
@@ -12,12 +12,14 @@ Operations teams need one admin surface to manage profile-scoped catalog and hom
 
 ## How to use
 
-1. Open `/admin/products`:
-   - Create categories.
-   - Create/edit products.
-   - Create/edit variants.
+1. Open `/admin/categories`:
+   - Create/edit categories.
+   - Review category table and profile template attributes.
+2. Open `/admin/products`:
+   - Create/edit products with full fields (slug, base SKU, description, tags, compare-at, currency, status).
+   - Create/edit variants with full fields (SKU, compare-at, stock, default flag).
    - Review TanStack tables for products/variants.
-2. Open `/admin/content`:
+3. Open `/admin/content`:
    - Create news posts, banners, featured-sale blocks.
    - Toggle active/status states.
    - Review content entries table.
@@ -29,7 +31,7 @@ Operations teams need one admin surface to manage profile-scoped catalog and hom
 - Actions validate permissions and pass payloads to `server/admin/admin-service.ts`.
 - Service validates with Zod DTO/domain schemas, mutates in-memory profile store, and timestamps updates.
 - Storefront services read from same profile runtime store (`runtime-store.ts`) so admin changes are immediately visible.
-- TanStack Table is used for products, variants, and content entry tables.
+- TanStack Table is used for categories, products, variants, and content entry tables.
 
 ## Why this approach
 
@@ -75,6 +77,7 @@ Operations teams need one admin surface to manage profile-scoped catalog and hom
 
 - `src/__tests__/admin/table-columns.test.tsx` (table behavior)
 - `e2e/admin-product-crud.spec.ts` (create/edit product integration path)
+- `e2e/admin-categories-crud.spec.ts` (create/edit category integration path)
 
 ## Open questions or future improvements
 

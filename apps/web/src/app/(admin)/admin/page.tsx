@@ -39,6 +39,9 @@ export default async function AdminPage() {
           </article>
         </div>
         <div className="mt-4 flex flex-wrap gap-2 text-sm">
+          <Link href="/admin/categories" className="rounded-md border px-3 py-1 hover:bg-muted">
+            Manage categories
+          </Link>
           <Link href="/admin/products" className="rounded-md border px-3 py-1 hover:bg-muted">
             Manage products
           </Link>

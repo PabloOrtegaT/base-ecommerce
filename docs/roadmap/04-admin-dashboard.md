@@ -9,7 +9,8 @@ Provide an operational dashboard for managing products, content, and catalog upd
 - Authentication and role-gated admin routes (phase 1 role guard in this deliverable, session-backed auth integration in Deliverable 05).
 - Dedicated admin host surface (`admin.<domain>`) with host-level route enforcement.
 - Product and variant CRUD.
-- Category and attribute management.
+- Category management on dedicated route (`/admin/categories`) with explicit create/edit UI.
+- Product and variant CRUD on dedicated route (`/admin/products`) with full edit fields.
 - Home content management.
 - Coupon management (percentage and fixed amount).
 - Admin shell theme parity (day/night) using shared theme system.
@@ -19,6 +20,9 @@ Provide an operational dashboard for managing products, content, and catalog upd
 ## Implementation checklist
 
 - Implement role-protected admin layout and navigation.
+- Split catalog administration into explicit modules:
+  - `/admin/categories` for category list/create/edit + template visibility.
+  - `/admin/products` for product/variant list/create/edit.
 - Reuse storefront theme provider/tokens in admin routes and expose theme toggle in admin shell.
 - Use TanStack Table for all tabular modules:
   - Products
@@ -47,6 +51,7 @@ Provide an operational dashboard for managing products, content, and catalog upd
 ## Integration/e2e requirements
 
 - E2E for admin product create/edit flow.
+- E2E for admin category create/edit flow.
 - E2E for CSV import success and partial-failure path.
 
 ## Acceptance criteria

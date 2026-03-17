@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import type { ColumnDef } from "@tanstack/react-table";
 import {
+  categoryColumns,
   contentColumns,
   couponColumns,
   csvErrorColumns,
@@ -12,6 +13,7 @@ import {
   variantColumns,
 } from "@/features/admin/table-columns";
 import type {
+  AdminCategoryRow,
   AdminContentRow,
   AdminCouponRow,
   AdminOrderRow,
@@ -31,6 +33,16 @@ const productActionColumn: ColumnDef<AdminProductRow> = {
   ),
 };
 
+const categoryActionColumn: ColumnDef<AdminCategoryRow> = {
+  id: "actions",
+  header: "Actions",
+  cell: ({ row }) => (
+    <Link href={`/admin/categories?editCategory=${row.original.id}`} className="text-primary hover:underline">
+      Edit
+    </Link>
+  ),
+};
+
 const variantActionColumn: ColumnDef<AdminVariantRow> = {
   id: "actions",
   header: "Actions",
@@ -40,6 +52,11 @@ const variantActionColumn: ColumnDef<AdminVariantRow> = {
     </Link>
   ),
 };
+
+export function CategoriesTable({ rows }: { rows: AdminCategoryRow[] }) {
+  const columns = React.useMemo(() => [...categoryColumns, categoryActionColumn], []);
+  return <DataTable columns={columns} data={rows} emptyLabel="No categories available." />;
+}
 
 export function ProductsTable({ rows }: { rows: AdminProductRow[] }) {
   const columns = React.useMemo(() => [...productColumns, productActionColumn], []);
