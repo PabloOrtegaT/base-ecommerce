@@ -2,6 +2,7 @@
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "base-ecommerce",
   "main": ".open-next/worker.js",
+  "minify": true,
   "compatibility_date": "2025-03-25",
   "compatibility_flags": ["nodejs_compat"],
   "d1_databases": [

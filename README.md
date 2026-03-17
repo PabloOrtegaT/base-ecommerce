@@ -112,6 +112,8 @@ npm run cf:preview
 npm run cf:deploy
 ```
 
+If deploy fails with `code: 10027` (`Worker exceeded the size limit of 3 MiB`), this is a Cloudflare plan limit, not an application runtime error. This repo enables Wrangler minification (`apps/web/wrangler.jsonc`), but complex Next.js bundles can still exceed Free-tier size limits and require a paid Workers plan.
+
 If you are deploying only to `workers.dev` (no custom domain yet), set:
 
 - `APP_BASE_URL=https://<your-worker>.<your-subdomain>.workers.dev`
