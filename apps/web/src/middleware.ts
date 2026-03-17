@@ -15,7 +15,7 @@ function getHostPolicy() {
   });
 }
 
-export function proxy(request: NextRequest) {
+export function middleware(request: NextRequest) {
   const policy = getHostPolicy();
   if (!policy.appHost || !policy.adminHost || policy.appHost === policy.adminHost) {
     return NextResponse.next();
@@ -52,8 +52,6 @@ export function proxy(request: NextRequest) {
 
   return NextResponse.next();
 }
-
-export const runtime = "edge";
 
 export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
