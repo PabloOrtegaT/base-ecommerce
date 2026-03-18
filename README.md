@@ -16,6 +16,10 @@ npm run db:migrate:local
 npm run db:seed
 ```
 
+Optional profile override (defaults to `pc-components`):
+
+- Set `STORE_PROFILE` in `apps/web/.dev.vars` to one of: `prints-3d`, `pc-components`, `plant-seeds`.
+
 Optional local host split for admin surface:
 
 - `APP_BASE_URL=http://storefront.lvh.me:3000`
@@ -58,6 +62,17 @@ npm run test
 npm run test:e2e
 ```
 
+Unit coverage gate policy:
+
+- `npm run test` enforces `90%` global thresholds (`lines`, `branches`, `functions`, `statements`) for endpoint and mutation-boundary modules:
+  - `src/app/api/**/route.ts`
+  - `src/app/(admin)/admin/actions.ts`
+  - `src/server/admin/mutation-errors.ts`
+  - `src/server/admin/role-guard.ts`
+  - `src/server/admin/stock-mode.ts`
+  - `src/server/config/host-policy.ts`
+- `npm run test:coverage:target` prints a non-blocking stretch report for the `100%` target.
+
 E2E defaults:
 
 - Storefront host: `http://storefront.lvh.me:3000`
@@ -66,7 +81,7 @@ E2E defaults:
 - Set `PLAYWRIGHT_REUSE_EXISTING_SERVER=1` only if you intentionally want to reuse a running server.
 - Set `PLAYWRIGHT_PORT` to change E2E server port if needed.
 
-## D05 Auth + Cart foundation
+## D05 Auth + Cart foundation (partial D05 — payments/orders pending)
 
 - Auth stack: Auth.js (`next-auth`) + Drizzle adapter + JWT sessions + rotating refresh sessions.
 - Persistence: Cloudflare D1 (`DB` binding) + Drizzle migrations.

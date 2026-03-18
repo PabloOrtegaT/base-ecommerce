@@ -33,6 +33,7 @@ Users add items before logging in and continue editing quantities quickly. Cart 
 - Authenticated cart writes (`POST /api/cart`) also run server reconciliation (same clamp/unavailable policy) and return canonical cart + sync summary.
 - Client store keeps one in-flight sync and coalesces rapid changes into a trailing latest snapshot.
 - Product page uses `/api/catalog/availability?variantId=...` to disable add-to-cart when no stock is purchasable.
+- Cart UI exposes per-line pending state while sync is in flight, preventing rapid update spam and double-submit races.
 - Local E2E startup runs D1 migration + seed before server boot to keep merge test fixtures deterministic.
 - Local seed resets owner refresh sessions and cart lines so merge test baselines remain deterministic across reruns.
 

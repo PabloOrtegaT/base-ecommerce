@@ -9,6 +9,7 @@ This folder contains planning and implementation guidance for the base ecommerce
 - `standards/`: Documentation and engineering standards that apply to all deliverables.
 - `flows/`: Human-readable documentation for each implemented business flow.
 - `erd/`: Domain relationship and schema reference documents.
+- `testing/`: Test coverage matrices and operational testing references.
 
 ## How to use
 

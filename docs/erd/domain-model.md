@@ -1,101 +1,236 @@
 # Domain ERD and Schema Notes
 
-## ERD (logical)
+## Persistence model
+
+The project uses two persistence strategies:
+
+- **Relational (Cloudflare D1 + Drizzle)**: users, accounts, auth tokens, carts, and refresh sessions.
+- **Runtime in-memory store**: categories, products, variants, inventory, content (news, banners, featured sales), coupons, and orders. Data is rebuilt from seed fixtures on every deploy/restart and managed in memory by the admin service.
+
+---
+
+## ERD — Persisted tables (D1)
+
+```mermaid
+erDiagram
+  USER ||--o{ ACCOUNT : has
+  USER ||--o{ VERIFICATION_TOKEN : owns
+  USER ||--o{ PASSWORD_RESET_TOKEN : owns
+  USER ||--|| CART : has
+  USER ||--o{ AUTH_REFRESH_SESSION : has
+  CART ||--o{ CART_ITEM : contains
+
+  USER {
+    text id PK
+    text name
+    text email UK
+    integer emailVerified
+    text image
+    text role "owner | manager | catalog"
+    text passwordHash
+    integer createdAt
+    integer updatedAt
+  }
+  ACCOUNT {
+    text userId FK
+    text type
+    text provider PK
+    text providerAccountId PK
+    text refresh_token
+    text access_token
+    integer expires_at
+    text token_type
+    text scope
+    text id_token
+    text session_state
+  }
+  VERIFICATION_TOKEN {
+    text identifier PK
+    text token PK
+    integer expires
+  }
+  PASSWORD_RESET_TOKEN {
+    text token PK
+    text userId FK_UK
+    integer expires
+    integer createdAt
+  }
+  CART {
+    text id PK
+    text userId FK_UK
+    integer createdAt
+    integer updatedAt
+  }
+  CART_ITEM {
+    text cartId PK_FK
+    text variantId PK
+    text productId
+    text name
+    text variantName
+    text href
+    text currency
+    integer unitPriceCents
+    integer stockOnHand
+    integer quantity
+    text unavailableReason
+    integer updatedAt
+  }
+  AUTH_REFRESH_SESSION {
+    text id PK
+    text userId FK
+    text surface "storefront | admin"
+    text tokenHash UK
+    text deviceId
+    text userAgent
+    text ipHash
+    integer createdAt
+    integer lastSeenAt
+    integer idleExpiresAt
+    integer absoluteExpiresAt
+    integer revokedAt
+    text rotatedFromId
+  }
+```
+
+---
+
+## ERD — Runtime domain entities (in-memory store)
+
+These entities are validated by Zod schemas in `packages/domain/` and managed in the runtime store. They are **not** persisted in D1.
 
 ```mermaid
 erDiagram
   CATEGORY ||--o{ PRODUCT : contains
+  CATEGORY ||--o{ ATTRIBUTE_DEFINITION : defines
   PRODUCT ||--o{ PRODUCT_VARIANT : has
   PRODUCT ||--o{ INVENTORY_LEDGER_ENTRY : tracks
   PRODUCT_VARIANT ||--o{ INVENTORY_LEDGER_ENTRY : tracks
-  CATEGORY ||--o{ ATTRIBUTE_DEFINITION : defines
-  PRODUCT ||--o{ PRODUCT_ATTRIBUTE_VALUE : stores
-  PRODUCT_VARIANT ||--o{ PRODUCT_ATTRIBUTE_VALUE : stores
-  NEWS_POST ||--o{ HOME_BLOCK : appears_in
-  PROMO_BANNER ||--o{ HOME_BLOCK : appears_in
-  FEATURED_SALE ||--o{ HOME_BLOCK : appears_in
+  FEATURED_SALE }o--o{ PRODUCT : features
 
   CATEGORY {
     uuid id PK
-    string slug
+    string slug UK
     string name
-    string template_key
+    string description
+    string templateKey "prints-3d | pc-components | plant-seeds"
   }
   ATTRIBUTE_DEFINITION {
     string key PK
     string label
-    string type
+    string type "string | number | boolean | enum"
     boolean required
-    json options
+    array options "enum values"
+    string unit
+    number min
+    number max
   }
   PRODUCT {
     uuid id PK
-    uuid category_id FK
+    uuid categoryId FK
     string name
-    string slug
-    string base_sku
-    string status
-    string currency
-    int price_cents
-    int compare_at_price_cents
+    string slug UK
+    string description
+    string baseSku
+    string status "draft | active | archived"
+    string currency "MXN | USD"
+    int priceCents
+    int compareAtPriceCents
+    array tags
+    datetime createdAt
+    datetime updatedAt
   }
   PRODUCT_VARIANT {
     uuid id PK
-    uuid product_id FK
+    uuid productId FK
     string sku
     string name
-    int price_cents
-    int compare_at_price_cents
-    int stock_on_hand
-    boolean is_default
-    json attribute_values
-  }
-  PRODUCT_ATTRIBUTE_VALUE {
-    uuid entity_id
-    string attribute_key
-    string|number|boolean value
+    int priceCents
+    int compareAtPriceCents
+    int stockOnHand
+    boolean isDefault
+    json attributeValues "embedded key-value map"
+    datetime createdAt
+    datetime updatedAt
   }
   INVENTORY_LEDGER_ENTRY {
     uuid id PK
-    uuid product_id FK
-    uuid variant_id FK
-    int quantity_delta
-    string reason
-    datetime created_at
+    uuid productId FK
+    uuid variantId FK
+    int quantityDelta
+    string reason "initial_stock | purchase | manual_adjustment | return | cancellation | restock"
+    string reference
+    datetime createdAt
   }
   NEWS_POST {
     uuid id PK
-    string slug
-    string status
-    datetime published_at
+    string slug UK
+    string title
+    string summary
+    string body
+    string status "draft | published | archived"
+    datetime publishedAt
+    datetime createdAt
+    datetime updatedAt
   }
   PROMO_BANNER {
     uuid id PK
     string title
-    datetime starts_at
-    datetime ends_at
-    boolean is_active
+    string subtitle
+    string ctaLabel
+    string ctaHref
+    datetime startsAt
+    datetime endsAt
+    boolean isActive
   }
   FEATURED_SALE {
     uuid id PK
     string title
-    json product_ids
-    datetime starts_at
-    datetime ends_at
-    boolean is_active
+    string description
+    array productIds
+    datetime startsAt
+    datetime endsAt
+    boolean isActive
   }
-  HOME_BLOCK {
+  COUPON {
     uuid id PK
-    string block_type
-    int display_order
+    string code UK
+    string type "percentage | fixed"
+    string target "subtotal"
+    int percentageOff
+    int amountOffCents
+    string currency
+    datetime startsAt
+    datetime endsAt
+    int usageLimit
+    int usageCount
+    boolean isActive
+    datetime createdAt
+    datetime updatedAt
   }
 ```
 
+---
+
 ## Role model
 
-- `owner`: full platform permissions.
-- `manager`: catalog/content/orders operations, no role management.
-- `catalog`: catalog + inventory operations, read-only content.
+- `owner`: full platform permissions (all 8 permissions). Can access admin routes.
+- `manager`: catalog/content/orders operations, no role management. Can access admin routes.
+- `catalog`: catalog + inventory operations, read-only content. **Cannot access admin routes** (admin layout requires `owner` or `manager` role).
+
+### Permission matrix
+
+| Permission | owner | manager | catalog |
+|------------|:-----:|:-------:|:-------:|
+| catalog:read | ✓ | ✓ | ✓ |
+| catalog:write | ✓ | ✓ | ✓ |
+| inventory:adjust | ✓ | ✓ | ✓ |
+| content:read | ✓ | ✓ | ✓ |
+| content:write | ✓ | ✓ | — |
+| orders:read | ✓ | ✓ | — |
+| orders:write | ✓ | ✓ | — |
+| roles:manage | ✓ | — | — |
+
+---
 
 ## Seeded attribute template sets
 

@@ -29,6 +29,7 @@ The platform needs real authentication with role-based authorization so admin op
 - Credentials provider validates password hash and verified-email state.
 - Session strategy is JWT-backed with rotating refresh sessions in D1.
 - Admin route pages and server actions enforce permission checks from session role.
+- Admin write actions enforce recent-auth window (`8h`) and split-host origin/referrer checks.
 - Runtime env resolution gives precedence to process env overrides to keep local/E2E host routing deterministic.
 - Split-host setups use shared parent-domain cookie scope when possible (for example `storefront.*` and `admin.*`), enabling authenticated continuity across subdomains.
 
@@ -63,6 +64,7 @@ The platform needs real authentication with role-based authorization so admin op
 ## Observability and debugging
 
 - Validation and permission errors surface explicit messages.
+- Admin mutation failures are sanitized and shown as safe flash-toasts (no raw stack traces in UI).
 - Auth provider flags are environment-driven and visible in login UI state.
 - E2E login helper asserts final host belongs to local allowed hosts to detect accidental production-domain redirects early.
 
@@ -70,6 +72,7 @@ The platform needs real authentication with role-based authorization so admin op
 
 - Passwords are hashed server-side before persistence.
 - Admin mutations require server-side permission checks.
+- Admin mutations require host-boundary and origin checks when admin surface is split to `admin.<domain>`.
 - Email/password login blocks unverified accounts.
 
 ## Tests that validate this flow
