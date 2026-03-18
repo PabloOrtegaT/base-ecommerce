@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { JsonLdScript } from "@/components/seo/json-ld-script";
 import { ProductCard } from "@/components/storefront/product-card";
 import { getCategoryBySlug, listCatalogProducts, type ProductSort } from "@/server/data/storefront-service";
+import { createPageMetadata } from "@/server/seo/metadata";
+import { buildBreadcrumbJsonLd } from "@/server/seo/structured-data";
 
 type CategoryPageProps = {
   params: Promise<{
@@ -31,11 +34,14 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
     };
   }
 
-  return {
+  return createPageMetadata({
     title: `${category.name} | Catalog`,
     description: category.description ?? `Browse ${category.name} products.`,
-  };
+    pathname: `/catalog/${category.slug}`,
+  });
 }
+
+export const revalidate = 60;
 
 export default async function CategoryPage({ params, searchParams }: CategoryPageProps) {
   const resolvedParams = await params;
@@ -93,6 +99,14 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
           />
         ))}
       </section>
+
+      <JsonLdScript
+        value={buildBreadcrumbJsonLd([
+          { name: "Home", pathname: "/" },
+          { name: "Catalog", pathname: "/catalog" },
+          { name: category.name, pathname: `/catalog/${category.slug}` },
+        ])}
+      />
     </main>
   );
 }

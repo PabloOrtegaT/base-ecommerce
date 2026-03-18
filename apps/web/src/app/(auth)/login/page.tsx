@@ -2,11 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { LoginForm } from "@/components/auth/login-form";
 import { getOAuthProviderFlags } from "@/server/config/runtime-env";
+import { createPageMetadata } from "@/server/seo/metadata";
 
-export const metadata: Metadata = {
-  title: "Login | Base Ecommerce",
+export const metadata: Metadata = createPageMetadata({
+  title: "Login",
   description: "Sign in with email/password or social providers.",
-};
+  pathname: "/login",
+  noIndex: true,
+});
 
 type LoginPageProps = {
   searchParams?: Promise<{

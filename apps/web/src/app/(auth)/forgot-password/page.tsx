@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@base-ecommerce/ui";
+import { createPageMetadata } from "@/server/seo/metadata";
 
-export const metadata: Metadata = {
-  title: "Forgot Password | Base Ecommerce",
+export const metadata: Metadata = createPageMetadata({
+  title: "Forgot Password",
   description: "Request a password reset email.",
-};
+  pathname: "/forgot-password",
+  noIndex: true,
+});
 
 type ForgotPasswordPageProps = {
   searchParams?: Promise<{ sent?: string; error?: string }>;
@@ -42,4 +45,3 @@ export default async function ForgotPasswordPage({ searchParams }: ForgotPasswor
     </main>
   );
 }
-

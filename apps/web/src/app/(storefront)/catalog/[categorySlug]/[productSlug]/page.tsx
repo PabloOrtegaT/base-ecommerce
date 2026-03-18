@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { JsonLdScript } from "@/components/seo/json-ld-script";
 import { ProductPurchasePanel } from "@/components/storefront/product-purchase-panel";
 import { formatCurrencyFromCents, getPriceDisplay } from "@/features/catalog/pricing";
 import { getProductByRoute } from "@/server/data/storefront-service";
+import { createPageMetadata } from "@/server/seo/metadata";
+import { buildBreadcrumbJsonLd, buildProductJsonLd } from "@/server/seo/structured-data";
 
 type ProductPageProps = {
   params: Promise<{
@@ -21,11 +24,15 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
     };
   }
 
-  return {
+  return createPageMetadata({
     title: `${result.product.name} | ${result.category.name}`,
     description: result.product.description ?? `Buy ${result.product.name}`,
-  };
+    pathname: `/catalog/${result.category.slug}/${result.product.slug}`,
+    type: "website",
+  });
 }
+
+export const revalidate = 60;
 
 export default async function ProductPage({ params }: ProductPageProps) {
   const resolvedParams = await params;
@@ -91,6 +98,25 @@ export default async function ProductPage({ params }: ProductPageProps) {
           }))}
         />
       </div>
+
+      <JsonLdScript
+        value={buildBreadcrumbJsonLd([
+          { name: "Home", pathname: "/" },
+          { name: "Catalog", pathname: "/catalog" },
+          { name: result.category.name, pathname: `/catalog/${result.category.slug}` },
+          { name: result.product.name, pathname: `/catalog/${result.category.slug}/${result.product.slug}` },
+        ])}
+      />
+      <JsonLdScript
+        value={buildProductJsonLd({
+          name: result.product.name,
+          description: result.product.description ?? `Buy ${result.product.name}`,
+          pathname: `/catalog/${result.category.slug}/${result.product.slug}`,
+          currency: result.product.currency,
+          priceCents: defaultVariant?.priceCents ?? result.product.priceCents,
+          stockOnHand: result.variants.reduce((acc, variant) => acc + variant.stockOnHand, 0),
+        })}
+      />
     </main>
   );
 }

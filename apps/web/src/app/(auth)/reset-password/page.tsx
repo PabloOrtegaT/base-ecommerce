@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@base-ecommerce/ui";
+import { createPageMetadata } from "@/server/seo/metadata";
 
-export const metadata: Metadata = {
-  title: "Reset Password | Base Ecommerce",
+export const metadata: Metadata = createPageMetadata({
+  title: "Reset Password",
   description: "Choose a new password using a valid reset token.",
-};
+  pathname: "/reset-password",
+  noIndex: true,
+});
 
 type ResetPasswordPageProps = {
   searchParams?: Promise<{ token?: string; error?: string }>;
@@ -47,4 +50,3 @@ export default async function ResetPasswordPage({ searchParams }: ResetPasswordP
     </main>
   );
 }
-

@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { createPageMetadata } from "@/server/seo/metadata";
 
-export const metadata: Metadata = {
-  title: "Verify Email | Base Ecommerce",
+export const metadata: Metadata = createPageMetadata({
+  title: "Verify Email",
   description: "Account verification status.",
-};
+  pathname: "/verify-email",
+  noIndex: true,
+});
 
 type VerifyPageProps = {
   searchParams?: Promise<{ error?: string }>;
@@ -28,4 +31,3 @@ export default async function VerifyEmailPage({ searchParams }: VerifyPageProps)
     </main>
   );
 }
-

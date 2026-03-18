@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@base-ecommerce/ui";
+import { createPageMetadata } from "@/server/seo/metadata";
 
-export const metadata: Metadata = {
-  title: "Register | Base Ecommerce",
+export const metadata: Metadata = createPageMetadata({
+  title: "Register",
   description: "Create an email/password account with verification.",
-};
+  pathname: "/register",
+  noIndex: true,
+});
 
 type RegisterPageProps = {
   searchParams?: Promise<{ error?: string }>;
@@ -67,4 +70,3 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
     </main>
   );
 }
-

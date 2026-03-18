@@ -1,6 +1,15 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/server/auth/session";
+import { createPageMetadata } from "@/server/seo/metadata";
+
+export const metadata: Metadata = createPageMetadata({
+  title: "Account",
+  description: "Account details and session controls.",
+  pathname: "/account",
+  noIndex: true,
+});
 
 export default async function AccountPage() {
   const user = await getSessionUser();
@@ -22,4 +31,3 @@ export default async function AccountPage() {
     </main>
   );
 }
-

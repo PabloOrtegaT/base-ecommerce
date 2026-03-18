@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { FlashToastHost } from "@/components/feedback/flash-toast-host";
 import { themeInitializationScript } from "@/features/theme/theme-script";
 import { popFlashToast } from "@/server/feedback/flash-toast";
+import { getSiteBaseUrl } from "@/server/seo/metadata";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -16,8 +17,20 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Base Ecommerce",
+  metadataBase: getSiteBaseUrl(),
+  title: {
+    default: "Base Ecommerce",
+    template: "%s | Base Ecommerce",
+  },
   description: "Foundation scaffold for a reusable ecommerce platform",
+  applicationName: "Base Ecommerce",
+  openGraph: {
+    type: "website",
+    siteName: "Base Ecommerce",
+  },
+  twitter: {
+    card: "summary_large_image",
+  },
 };
 
 export default async function RootLayout({

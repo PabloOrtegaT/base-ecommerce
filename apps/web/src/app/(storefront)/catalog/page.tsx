@@ -2,11 +2,15 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ProductCard } from "@/components/storefront/product-card";
 import { listCatalogProducts, listCategories, type ProductSort } from "@/server/data/storefront-service";
+import { createPageMetadata } from "@/server/seo/metadata";
 
-export const metadata: Metadata = {
-  title: "Catalog | Base Ecommerce",
+export const metadata: Metadata = createPageMetadata({
+  title: "Catalog",
   description: "Browse products with filters and sorting.",
-};
+  pathname: "/catalog",
+});
+
+export const revalidate = 60;
 
 type CatalogPageProps = {
   searchParams?: Promise<{
