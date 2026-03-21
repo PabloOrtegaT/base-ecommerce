@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find C:/Users/Public/Desktop/prog/base-ecommerce/apps/web/src/app/api -name *cart* -type f)",
+      "Bash(npx tsc:*)",
+      "Bash(npx vitest:*)"
+    ]
+  }
+}
