@@ -21,13 +21,10 @@ export const cartStateSchema = z.object({
   items: z.array(cartItemSchema),
 });
 
-export const cartWritePayloadSchema = z.union([
-  cartStateSchema,
-  z.object({
-    cart: cartStateSchema,
-    version: z.number().int().nonnegative().optional(),
-  }),
-]);
+export const cartWritePayloadSchema = z.object({
+  cart: cartStateSchema,
+  merge: z.boolean().optional(),
+});
 
 export function normalizeParsedCartState(parsed: z.infer<typeof cartStateSchema>): CartState {
   return {
@@ -53,21 +50,5 @@ export function normalizeParsedCartState(parsed: z.infer<typeof cartStateSchema>
 
       return normalized;
     }),
-  };
-}
-
-export function normalizeCartWritePayload(parsed: z.infer<typeof cartWritePayloadSchema>): {
-  cart: CartState;
-  version?: number;
-} {
-  if ("cart" in parsed) {
-    return {
-      cart: normalizeParsedCartState(parsed.cart),
-      ...(typeof parsed.version === "number" ? { version: parsed.version } : {}),
-    };
-  }
-
-  return {
-    cart: normalizeParsedCartState(parsed),
   };
 }

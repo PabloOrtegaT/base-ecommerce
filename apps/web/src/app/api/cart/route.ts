@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/server/auth/session";
-import { createEmptyCartMergeSummary } from "@/features/cart/merge-summary";
 import {
   getUserCartSnapshot,
+  mergeGuestCartIntoUserCart,
   reconcileCartState,
   replaceUserCart,
 } from "@/server/cart/service";
-import { trackError, trackWarn } from "@/server/observability/telemetry";
+import { trackError } from "@/server/observability/telemetry";
 import { enforceRateLimit, getClientIpFromRequest } from "@/server/security/rate-limit";
-import { cartWritePayloadSchema, normalizeCartWritePayload } from "@/server/cart/validation";
+import { cartWritePayloadSchema, normalizeParsedCartState } from "@/server/cart/validation";
 
 export async function GET() {
   const user = await getSessionUser();
@@ -50,43 +50,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid cart payload." }, { status: 400 });
   }
 
-  const parsedPayload = normalizeCartWritePayload(parsed.data);
-  const requestedCart = parsedPayload.cart;
-  const expectedVersion = parsedPayload.version;
+  const requestedCart = normalizeParsedCartState(parsed.data.cart);
+  const isMerge = parsed.data.merge === true;
 
   try {
-    const currentSnapshot = await getUserCartSnapshot(user.id);
-    if (typeof expectedVersion !== "number" || expectedVersion !== currentSnapshot.version) {
-      return NextResponse.json(
-        {
-          error: "Version conflict.",
-          ...currentSnapshot,
-          summary: createEmptyCartMergeSummary(),
-        },
-        { status: 409 },
-      );
+    if (isMerge) {
+      const result = await mergeGuestCartIntoUserCart(user.id, requestedCart);
+      return NextResponse.json(result);
     }
 
     const reconciled = await reconcileCartState(requestedCart);
-    const replaceResult = await replaceUserCart(user.id, reconciled.cart, {
-      expectedVersion: currentSnapshot.version,
-    });
-
-    if (!replaceResult.ok) {
-      trackWarn({
-        scope: "api.cart.post",
-        message: "version_conflict_after_reconcile",
-        metadata: { userId: user.id },
-      });
-      return NextResponse.json(
-        {
-          error: "Version conflict.",
-          ...replaceResult.snapshot,
-          summary: reconciled.summary,
-        },
-        { status: 409 },
-      );
-    }
+    const replaceResult = await replaceUserCart(user.id, reconciled.cart);
 
     return NextResponse.json({
       cart: reconciled.cart,

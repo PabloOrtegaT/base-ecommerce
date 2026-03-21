@@ -27,7 +27,6 @@ export type VariantAvailability = {
   variantId: string;
   stockOnHand: number;
   availableToSell: number;
-  reservedQty: number;
   isPurchasable: boolean;
   reason?: string;
 };
@@ -132,7 +131,6 @@ export async function getCanonicalVariantAvailability(variantId: string): Promis
       variantId,
       stockOnHand: 0,
       availableToSell: 0,
-      reservedQty: 0,
       isPurchasable: false,
       reason: "Variant not found.",
     };
@@ -148,7 +146,6 @@ export async function getCanonicalVariantAvailability(variantId: string): Promis
       variantId,
       stockOnHand: onHandQty,
       availableToSell: 0,
-      reservedQty: 0,
       isPurchasable: false,
       reason: "Product is not available.",
     };
@@ -159,7 +156,6 @@ export async function getCanonicalVariantAvailability(variantId: string): Promis
       variantId,
       stockOnHand: onHandQty,
       availableToSell: 0,
-      reservedQty: 0,
       isPurchasable: false,
       reason: "Variant is out of stock.",
     };
@@ -169,7 +165,6 @@ export async function getCanonicalVariantAvailability(variantId: string): Promis
     variantId,
     stockOnHand: onHandQty,
     availableToSell,
-    reservedQty: 0,
     isPurchasable: true,
   };
 }

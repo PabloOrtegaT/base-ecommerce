@@ -43,7 +43,6 @@ export function ProductPurchasePanel({
   variants,
 }: ProductPurchasePanelProps) {
   const addItem = useCartStore((state) => state.addItem);
-  const pendingVariantIds = useCartStore((state) => state.pendingVariantIds);
   const [selectedVariantId, setSelectedVariantId] = useState(variants[0]?.id ?? "");
   const [quantity, setQuantity] = useState(1);
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -126,8 +125,7 @@ export function ProductPurchasePanel({
         };
   const resolvedStock = resolvedAvailability.stockOnHand;
   const isOutOfStock = !resolvedAvailability.isPurchasable || resolvedStock <= 0;
-  const isPending = pendingVariantIds.includes(selectedVariant.id);
-  const canAddToCart = !isOutOfStock && !isPending && !isCheckingAvailability && quantity <= resolvedStock;
+  const canAddToCart = !isOutOfStock && !isCheckingAvailability && quantity <= resolvedStock;
 
   const onAddToCart = () => {
     if (!canAddToCart) {
@@ -225,7 +223,7 @@ export function ProductPurchasePanel({
             setQuantity(bounded);
           }}
           className="w-24 rounded-md border bg-background px-3 py-2 text-sm"
-          disabled={isOutOfStock || isPending || isCheckingAvailability}
+          disabled={isOutOfStock || isCheckingAvailability}
         />
       </div>
 
@@ -244,7 +242,6 @@ export function ProductPurchasePanel({
       </div>
 
       {feedback && <p className="text-sm text-muted-foreground">{feedback}</p>}
-      {isPending && <p className="text-xs text-muted-foreground">Syncing this variant in your cart...</p>}
     </section>
   );
 }

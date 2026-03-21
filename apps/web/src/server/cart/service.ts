@@ -75,40 +75,9 @@ export async function getUserCartSnapshot(userId: string): Promise<{
 export async function replaceUserCart(
   userId: string,
   cart: CartState,
-  options?: {
-    expectedVersion?: number;
-  },
-): Promise<
-  | {
-      ok: true;
-      version: number;
-    }
-  | {
-      ok: false;
-      reason: "version_conflict";
-      snapshot: {
-        cart: CartState;
-        version: number;
-      };
-    }
-> {
+): Promise<{ version: number }> {
   const db = getDb();
   const cartRow = await getOrCreateCart(userId);
-  const currentVersion = cartRow.updatedAt.getTime();
-  if (typeof options?.expectedVersion === "number" && options.expectedVersion !== currentVersion) {
-    const rows = await db.select().from(cartItemsTable).where(eq(cartItemsTable.cartId, cartRow.id));
-    return {
-      ok: false,
-      reason: "version_conflict",
-      snapshot: {
-        cart: {
-          items: rows.map(mapCartItemRowToCartItem),
-        },
-        version: currentVersion,
-      },
-    };
-  }
-
   const cartId = cartRow.id;
   await db.delete(cartItemsTable).where(eq(cartItemsTable.cartId, cartId));
 
@@ -157,66 +126,7 @@ export async function replaceUserCart(
     })
     .where(eq(cartsTable.id, cartId));
 
-  return {
-    ok: true,
-    version: now.getTime(),
-  };
-}
-
-export function resolveVariantFromActiveCatalog(variantId: string): VariantResolution {
-  const profile = getActiveStoreProfile();
-  const store = getProfileRuntimeStore(profile);
-  const variant = store.variants.find((entry) => entry.id === variantId);
-  if (!variant) {
-    return {
-      status: "unavailable",
-      reason: "Variant not found.",
-    };
-  }
-
-  const product = store.products.find((entry) => entry.id === variant.productId);
-  if (!product) {
-    return {
-      status: "unavailable",
-      reason: "Product not found.",
-    };
-  }
-
-  const category = store.categories.find((entry) => entry.id === product.categoryId);
-  const href = category ? `/catalog/${category.slug}/${product.slug}` : `/catalog`;
-
-  if (product.status !== "active" || variant.stockOnHand <= 0) {
-    return {
-      status: "unavailable",
-      reason: "Variant is out of stock.",
-      fallbackItem: {
-        productId: product.id,
-        variantId: variant.id,
-        name: product.name,
-        variantName: variant.name,
-        href,
-        currency: product.currency,
-        unitPriceCents: variant.priceCents,
-        stockOnHand: variant.stockOnHand,
-        unavailableReason: "Variant is out of stock.",
-      },
-    };
-  }
-
-  return {
-    status: "available",
-    item: {
-      productId: product.id,
-      variantId: variant.id,
-      name: product.name,
-      variantName: variant.name,
-      href,
-      currency: product.currency,
-      unitPriceCents: variant.priceCents,
-      stockOnHand: variant.stockOnHand,
-    },
-    stockOnHand: variant.stockOnHand,
-  };
+  return { version: now.getTime() };
 }
 
 async function resolveVariantFromCanonicalCatalog(variantId: string): Promise<VariantResolution> {
@@ -286,27 +196,12 @@ export async function reconcileCartState(cart: CartState): Promise<{
   });
 }
 
-export async function reconcileCartStateAgainstServer(input: {
-  requestedCart: CartState;
-  serverCart: CartState;
-}): Promise<{
-  cart: CartState;
-  summary: CartMergeSummary;
-}> {
-  return mergeCartStates({
-    guestCart: input.requestedCart,
-    serverCart: input.serverCart,
-    resolveVariant: resolveVariantFromCanonicalCatalog,
-  });
-}
-
 export async function getVariantAvailability(variantId: string) {
   const availability = await getCanonicalVariantAvailability(variantId);
   return {
     variantId,
     stockOnHand: availability.stockOnHand,
     availableToSell: availability.availableToSell,
-    reservedQty: availability.reservedQty,
     isPurchasable: availability.isPurchasable,
     ...(availability.reason ? { reason: availability.reason } : {}),
   };
@@ -324,13 +219,6 @@ export async function mergeGuestCartIntoUserCart(userId: string, guestCart: Cart
     resolveVariant: resolveVariantFromCanonicalCatalog,
   });
   const replaceResult = await replaceUserCart(userId, merged.cart);
-  if (!replaceResult.ok) {
-    return {
-      ...merged,
-      version: replaceResult.snapshot.version,
-    };
-  }
-
   return {
     ...merged,
     version: replaceResult.version,

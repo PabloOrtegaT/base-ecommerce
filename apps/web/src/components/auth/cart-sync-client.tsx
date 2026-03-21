@@ -95,12 +95,12 @@ export function CartSyncClient({ nextPath }: CartSyncClientProps) {
           return;
         }
 
-        const response = await fetch("/api/cart/merge", {
+        const response = await fetch("/api/cart", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(guestCart),
+          body: JSON.stringify({ cart: guestCart, merge: true }),
         });
 
         if (!response.ok) {
