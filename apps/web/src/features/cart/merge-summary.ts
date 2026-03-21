@@ -16,10 +16,13 @@ export type CartMergeSummary = {
   messages: string[];
 };
 
-export const emptyCartMergeSummary: CartMergeSummary = {
-  mergedLines: [],
-  adjustedLines: [],
-  unavailableLines: [],
-  messages: [],
-};
+export function createEmptyCartMergeSummary(): CartMergeSummary {
+  return {
+    mergedLines: [],
+    adjustedLines: [],
+    unavailableLines: [],
+    messages: [],
+  };
+}
 
+export const emptyCartMergeSummary: CartMergeSummary = createEmptyCartMergeSummary();

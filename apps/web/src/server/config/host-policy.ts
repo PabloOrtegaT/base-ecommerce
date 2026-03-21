@@ -29,9 +29,50 @@ function hostFromUrl(urlValue: string) {
   }
 }
 
+function hostnameFromUrl(urlValue: string) {
+  try {
+    return normalizeHost(new URL(urlValue).hostname);
+  } catch {
+    return "";
+  }
+}
+
+function isLoopbackAliasHostname(hostname: string) {
+  const normalized = normalizeHost(hostname);
+  return (
+    normalized === "localhost" ||
+    normalized === "127.0.0.1" ||
+    normalized === "::1" ||
+    normalized.endsWith(".localhost") ||
+    normalized.endsWith(".lvh.me") ||
+    normalized.endsWith(".nip.io") ||
+    normalized.endsWith(".sslip.io")
+  );
+}
+
+function shouldDisableSplitHostMode(appBaseUrl: string, adminBaseUrl: string) {
+  if (appBaseUrl === adminBaseUrl) {
+    return false;
+  }
+
+  const appHostname = hostnameFromUrl(appBaseUrl);
+  const adminHostname = hostnameFromUrl(adminBaseUrl);
+  if (!appHostname || !adminHostname) {
+    return false;
+  }
+
+  const isLocalPair = isLoopbackAliasHostname(appHostname) || isLoopbackAliasHostname(adminHostname);
+  if (!isLocalPair) {
+    return false;
+  }
+
+  return !resolveSharedCookieDomain(appBaseUrl, adminBaseUrl);
+}
+
 export function resolveHostPolicy(input: HostPolicyInput): HostPolicy {
   const appBaseUrl = input.appBaseUrl ?? "http://127.0.0.1:3000";
-  const adminBaseUrl = input.adminBaseUrl ?? appBaseUrl;
+  const requestedAdminBaseUrl = input.adminBaseUrl ?? appBaseUrl;
+  const adminBaseUrl = shouldDisableSplitHostMode(appBaseUrl, requestedAdminBaseUrl) ? appBaseUrl : requestedAdminBaseUrl;
   const appHost = hostFromUrl(appBaseUrl);
   const adminHost = hostFromUrl(adminBaseUrl);
 
@@ -108,7 +149,7 @@ export function resolveAdminEntryHref(appBaseUrl: string, adminBaseUrl: string, 
 
 export function isLocalDevelopmentHost(host: string) {
   const normalized = normalizeHost(host);
-  return normalized === "localhost" || normalized === "127.0.0.1" || normalized.endsWith(".lvh.me");
+  return isLoopbackAliasHostname(normalized);
 }
 
 function parseHostnameFromUrl(urlValue: string) {

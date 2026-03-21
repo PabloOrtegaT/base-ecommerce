@@ -27,6 +27,7 @@ describe("zustand cart store", () => {
       }),
     );
     useCartStore.getState().hydrateCart(emptyCartState);
+    useCartStore.getState().setAuthState(true);
     useCartStore.setState({
       mergeSummary: emptyCartMergeSummary,
       lastSyncSummary: emptyCartMergeSummary,

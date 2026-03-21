@@ -3,9 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Button } from "@base-ecommerce/ui";
+import { showClientToast } from "@/components/feedback/client-toast";
 import { calculateCartTotals } from "@/features/cart/cart";
 import { useCartStore } from "@/features/cart/cart-store";
 import { formatCurrencyFromCents, getPriceDisplay } from "@/features/catalog/pricing";
+import { runSingleFlight } from "@/lib/single-flight";
 
 type VariantItem = {
   id: string;
@@ -58,28 +60,42 @@ export function ProductPurchasePanel({
       return;
     }
 
-    const controller = new AbortController();
+    let active = true;
     const run = async () => {
       setIsCheckingAvailability(true);
       try {
-        const url = new URL("/api/catalog/availability", window.location.origin);
-        url.searchParams.set("variantId", selectedVariant.id);
-        const response = await fetch(url, { method: "GET", signal: controller.signal });
-        if (!response.ok) {
-          setAvailability(null);
+        const payload = await runSingleFlight<VariantAvailability | null>(
+          `catalog-availability:${selectedVariant.id}`,
+          async () => {
+            const url = new URL("/api/catalog/availability", window.location.origin);
+            url.searchParams.set("variantId", selectedVariant.id);
+            const response = await fetch(url, { method: "GET", cache: "no-store" });
+            if (!response.ok) {
+              return null;
+            }
+            return (await response.json()) as VariantAvailability;
+          },
+        );
+
+        if (!active) {
           return;
         }
-        const payload = (await response.json()) as VariantAvailability;
         setAvailability(payload);
       } catch {
-        setAvailability(null);
+        if (active) {
+          setAvailability(null);
+        }
       } finally {
-        setIsCheckingAvailability(false);
+        if (active) {
+          setIsCheckingAvailability(false);
+        }
       }
     };
 
     void run();
-    return () => controller.abort();
+    return () => {
+      active = false;
+    };
   }, [selectedVariant]);
 
   useEffect(() => {
@@ -115,6 +131,13 @@ export function ProductPurchasePanel({
 
   const onAddToCart = () => {
     if (!canAddToCart) {
+      const message = resolvedAvailability.reason ?? "This item is no longer available in stock.";
+      setFeedback(message);
+      showClientToast({
+        type: "error",
+        code: "out_of_stock",
+        message,
+      });
       return;
     }
     addItem(
@@ -191,7 +214,7 @@ export function ProductPurchasePanel({
           id="qty"
           type="number"
           min={1}
-          max={Math.max(1, selectedVariant.stockOnHand)}
+          max={Math.max(1, resolvedStock)}
           value={quantity}
           onChange={(event) => {
             const parsed = Number(event.target.value);

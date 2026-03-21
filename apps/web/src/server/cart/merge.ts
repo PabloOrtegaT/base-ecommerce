@@ -1,5 +1,5 @@
 import { type CartItem, type CartState } from "@/features/cart/cart";
-import { emptyCartMergeSummary, type CartMergeSummary } from "@/features/cart/merge-summary";
+import { createEmptyCartMergeSummary, type CartMergeSummary } from "@/features/cart/merge-summary";
 
 export type VariantResolution =
   | {
@@ -45,7 +45,7 @@ function toMergedMap(items: CartItem[]) {
 
 export async function mergeCartStates(input: MergeInput): Promise<MergeResult> {
   const mergedBase = toMergedMap([...input.serverCart.items, ...input.guestCart.items]);
-  const summary: CartMergeSummary = { ...emptyCartMergeSummary };
+  const summary: CartMergeSummary = createEmptyCartMergeSummary();
   const nextItems: CartItem[] = [];
 
   for (const [variantId, baseLine] of mergedBase.entries()) {

@@ -49,12 +49,16 @@ describe("host policy", () => {
 
     const sameHostHref = resolveAdminEntryHref("https://spookynexus.com", "https://spookynexus.com");
     expect(sameHostHref).toBe("/admin");
+
+    const localFallbackHref = resolveAdminEntryHref("http://localhost:3000", "http://admin.127.0.0.1.nip.io:3000");
+    expect(localFallbackHref).toBe("/admin");
   });
 
   it("builds absolute URLs and local host detection correctly", () => {
     expect(buildAbsoluteUrl("https://spookynexus.com", "/admin", "?q=1")).toBe("https://spookynexus.com/admin?q=1");
     expect(isLocalDevelopmentHost("localhost:3000")).toBe(true);
     expect(isLocalDevelopmentHost("storefront.lvh.me:3000")).toBe(true);
+    expect(isLocalDevelopmentHost("admin.127.0.0.1.nip.io:3000")).toBe(true);
     expect(isLocalDevelopmentHost("spookynexus.com")).toBe(false);
   });
 
@@ -68,5 +72,17 @@ describe("host policy", () => {
     );
     expect(resolveSharedCookieDomain("https://intranet", "https://admin.intranet")).toBe(".intranet");
     expect(resolveSharedCookieDomain("not-a-url", "https://admin.spookynexus.com")).toBeUndefined();
+  });
+
+  it("collapses incompatible local split hosts into same-host mode", () => {
+    const policy = resolveHostPolicy({
+      appBaseUrl: "http://localhost:3000",
+      adminBaseUrl: "http://admin.127.0.0.1.nip.io:3000",
+    });
+
+    expect(policy.appBaseUrl).toBe("http://localhost:3000");
+    expect(policy.adminBaseUrl).toBe("http://localhost:3000");
+    expect(policy.appHost).toBe("localhost");
+    expect(policy.adminHost).toBe("localhost");
   });
 });

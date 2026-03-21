@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { FlashToast } from "@/server/feedback/flash-toast";
+import { CLIENT_TOAST_EVENT } from "./client-toast";
 
 type FlashToastHostProps = {
   initialToast: FlashToast | null;
@@ -30,6 +31,20 @@ export function FlashToastHost({ initialToast }: FlashToastHostProps) {
     const secure = window.location.protocol === "https:" ? "; Secure" : "";
     document.cookie = `${FLASH_TOAST_COOKIE}=; Max-Age=0; Path=/; SameSite=Lax${secure}`;
   }, [toast]);
+
+  useEffect(() => {
+    const onToast = (event: Event) => {
+      const customEvent = event as CustomEvent<FlashToast>;
+      if (!customEvent.detail?.message) {
+        return;
+      }
+      setToast(customEvent.detail);
+    };
+    window.addEventListener(CLIENT_TOAST_EVENT, onToast as EventListener);
+    return () => {
+      window.removeEventListener(CLIENT_TOAST_EVENT, onToast as EventListener);
+    };
+  }, []);
 
   useEffect(() => {
     if (!toast) {

@@ -3,12 +3,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const {
   getSessionUserMock,
   getUserCartSnapshotMock,
-  reconcileCartStateAgainstServerMock,
+  reconcileCartStateMock,
   replaceUserCartMock,
 } = vi.hoisted(() => ({
   getSessionUserMock: vi.fn(),
   getUserCartSnapshotMock: vi.fn(),
-  reconcileCartStateAgainstServerMock: vi.fn(),
+  reconcileCartStateMock: vi.fn(),
   replaceUserCartMock: vi.fn(),
 }));
 
@@ -40,7 +40,7 @@ vi.mock("@/server/auth/session", () => ({
 
 vi.mock("@/server/cart/service", () => ({
   getUserCartSnapshot: getUserCartSnapshotMock,
-  reconcileCartStateAgainstServer: reconcileCartStateAgainstServerMock,
+  reconcileCartState: reconcileCartStateMock,
   replaceUserCart: replaceUserCartMock,
 }));
 
@@ -70,7 +70,7 @@ describe("api/cart route", () => {
       cart: { items: [] },
       version: 1,
     });
-    reconcileCartStateAgainstServerMock.mockResolvedValue({
+    reconcileCartStateMock.mockResolvedValue({
       cart: { items: [] },
       summary: { mergedLines: [], adjustedLines: [], unavailableLines: [], messages: [] },
     });
@@ -152,7 +152,7 @@ describe("api/cart route", () => {
 
     expect(response.status).toBe(400);
     expect(await response.json()).toEqual({ error: "Invalid cart payload." });
-    expect(reconcileCartStateAgainstServerMock).not.toHaveBeenCalled();
+    expect(reconcileCartStateMock).not.toHaveBeenCalled();
   });
 
   it("POST returns 409 when expected cart version is stale", async () => {
@@ -180,7 +180,34 @@ describe("api/cart route", () => {
       version: 9,
       summary: { mergedLines: [], adjustedLines: [], unavailableLines: [], messages: [] },
     });
-    expect(reconcileCartStateAgainstServerMock).not.toHaveBeenCalled();
+    expect(reconcileCartStateMock).not.toHaveBeenCalled();
+  });
+
+  it("POST returns 409 when expected cart version is missing", async () => {
+    getSessionUserMock.mockResolvedValue({ id: "user-1" });
+    normalizeCartWritePayloadMock.mockReturnValueOnce({
+      cart: { items: [{ variantId: "variant-1", quantity: 3 }] },
+    });
+    getUserCartSnapshotMock.mockResolvedValueOnce({
+      cart: { items: [{ variantId: "variant-1", quantity: 2 }] },
+      version: 9,
+    });
+
+    const request = new Request("http://localhost:3000/api/cart", {
+      method: "POST",
+      body: JSON.stringify({ items: [{ variantId: "variant-1", quantity: 3 }] }),
+    });
+
+    const response = await POST(request);
+
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({
+      error: "Version conflict.",
+      cart: { items: [{ variantId: "variant-1", quantity: 2 }] },
+      version: 9,
+      summary: { mergedLines: [], adjustedLines: [], unavailableLines: [], messages: [] },
+    });
+    expect(reconcileCartStateMock).not.toHaveBeenCalled();
   });
 
   it("POST reconciles cart against server snapshot and persists new version", async () => {
@@ -203,7 +230,7 @@ describe("api/cart route", () => {
         messages: ["Merged 1 item(s)."],
       },
     };
-    reconcileCartStateAgainstServerMock.mockResolvedValueOnce(reconciled);
+    reconcileCartStateMock.mockResolvedValueOnce(reconciled);
     replaceUserCartMock.mockResolvedValueOnce({ ok: true, version: 6 });
 
     const request = new Request("http://localhost:3000/api/cart", {
@@ -213,9 +240,8 @@ describe("api/cart route", () => {
 
     const response = await POST(request);
 
-    expect(reconcileCartStateAgainstServerMock).toHaveBeenCalledWith({
-      requestedCart: { items: [{ variantId: "variant-1", quantity: 3 }] },
-      serverCart: { items: [{ variantId: "variant-1", quantity: 1 }] },
+    expect(reconcileCartStateMock).toHaveBeenCalledWith({
+      items: [{ variantId: "variant-1", quantity: 3 }],
     });
     expect(replaceUserCartMock).toHaveBeenCalledWith("user-1", reconciled.cart, {
       expectedVersion: 5,
@@ -226,5 +252,75 @@ describe("api/cart route", () => {
       summary: reconciled.summary,
       version: 6,
     });
+  });
+
+  it("POST returns 409 when replace fails due late version conflict", async () => {
+    getSessionUserMock.mockResolvedValue({ id: "user-1" });
+    normalizeCartWritePayloadMock.mockReturnValueOnce({
+      cart: { items: [{ variantId: "variant-1", quantity: 3 }] },
+      version: 5,
+    });
+    getUserCartSnapshotMock.mockResolvedValueOnce({
+      cart: { items: [{ variantId: "variant-1", quantity: 1 }] },
+      version: 5,
+    });
+    reconcileCartStateMock.mockResolvedValueOnce({
+      cart: { items: [{ variantId: "variant-1", quantity: 3 }] },
+      summary: {
+        mergedLines: ["variant-1"],
+        adjustedLines: [],
+        unavailableLines: [],
+        messages: [],
+      },
+    });
+    replaceUserCartMock.mockResolvedValueOnce({
+      ok: false,
+      snapshot: { cart: { items: [{ variantId: "variant-1", quantity: 2 }] }, version: 6 },
+    });
+
+    const request = new Request("http://localhost:3000/api/cart", {
+      method: "POST",
+      body: JSON.stringify({ items: [{ variantId: "variant-1", quantity: 3 }] }),
+    });
+
+    const response = await POST(request);
+
+    expect(response.status).toBe(409);
+    expect(trackWarnMock).toHaveBeenCalled();
+    expect(await response.json()).toEqual({
+      error: "Version conflict.",
+      cart: { items: [{ variantId: "variant-1", quantity: 2 }] },
+      version: 6,
+      summary: {
+        mergedLines: ["variant-1"],
+        adjustedLines: [],
+        unavailableLines: [],
+        messages: [],
+      },
+    });
+  });
+
+  it("POST returns 500 when reconciliation pipeline throws", async () => {
+    getSessionUserMock.mockResolvedValue({ id: "user-1" });
+    normalizeCartWritePayloadMock.mockReturnValueOnce({
+      cart: { items: [{ variantId: "variant-1", quantity: 3 }] },
+      version: 5,
+    });
+    getUserCartSnapshotMock.mockResolvedValueOnce({
+      cart: { items: [{ variantId: "variant-1", quantity: 1 }] },
+      version: 5,
+    });
+    reconcileCartStateMock.mockRejectedValueOnce(new Error("db down"));
+
+    const request = new Request("http://localhost:3000/api/cart", {
+      method: "POST",
+      body: JSON.stringify({ items: [{ variantId: "variant-1", quantity: 3 }] }),
+    });
+
+    const response = await POST(request);
+
+    expect(response.status).toBe(500);
+    expect(await response.json()).toEqual({ error: "Could not update cart." });
+    expect(trackErrorMock).toHaveBeenCalled();
   });
 });

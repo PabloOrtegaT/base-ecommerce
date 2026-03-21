@@ -5,6 +5,12 @@ const { getSessionUserMock, mergeGuestCartIntoUserCartMock } = vi.hoisted(() => 
   mergeGuestCartIntoUserCartMock: vi.fn(),
 }));
 
+const { enforceRateLimitMock, getClientIpFromRequestMock, trackErrorMock } = vi.hoisted(() => ({
+  enforceRateLimitMock: vi.fn(() => ({ allowed: true, retryAfterSeconds: 0 })),
+  getClientIpFromRequestMock: vi.fn(() => "127.0.0.1"),
+  trackErrorMock: vi.fn(),
+}));
+
 const { cartStateSafeParseMock, normalizeParsedCartStateMock } = vi.hoisted(() => ({
   cartStateSafeParseMock: vi.fn((payload: unknown) => {
     if (!payload || typeof payload !== "object" || !Array.isArray((payload as { items?: unknown }).items)) {
@@ -23,6 +29,15 @@ vi.mock("@/server/cart/service", () => ({
   mergeGuestCartIntoUserCart: mergeGuestCartIntoUserCartMock,
 }));
 
+vi.mock("@/server/security/rate-limit", () => ({
+  enforceRateLimit: enforceRateLimitMock,
+  getClientIpFromRequest: getClientIpFromRequestMock,
+}));
+
+vi.mock("@/server/observability/telemetry", () => ({
+  trackError: trackErrorMock,
+}));
+
 vi.mock("@/server/cart/validation", () => ({
   cartStateSchema: {
     safeParse: cartStateSafeParseMock,
@@ -35,6 +50,7 @@ import { POST } from "@/app/api/cart/merge/route";
 describe("api/cart/merge route", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    enforceRateLimitMock.mockReturnValue({ allowed: true, retryAfterSeconds: 0 });
     mergeGuestCartIntoUserCartMock.mockResolvedValue({
       cart: { items: [] },
       summary: { mergedLines: [], adjustedLines: [], unavailableLines: [], messages: [] },
@@ -67,6 +83,23 @@ describe("api/cart/merge route", () => {
     expect(response.status).toBe(400);
     expect(await response.json()).toEqual({ error: "Invalid cart payload." });
     expect(mergeGuestCartIntoUserCartMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 429 when rate limited", async () => {
+    getSessionUserMock.mockResolvedValue({ id: "user-1" });
+    enforceRateLimitMock.mockReturnValueOnce({ allowed: false, retryAfterSeconds: 12 });
+    const request = new Request("http://localhost:3000/api/cart/merge", {
+      method: "POST",
+      body: JSON.stringify({ items: [] }),
+    });
+
+    const response = await POST(request);
+
+    expect(response.status).toBe(429);
+    expect(response.headers.get("Retry-After")).toBe("12");
+    expect(await response.json()).toEqual({
+      error: "Too many cart merge attempts. Please try again in a moment.",
+    });
   });
 
   it("returns 400 when request body is invalid JSON", async () => {
@@ -106,5 +139,23 @@ describe("api/cart/merge route", () => {
     });
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual(mergeResult);
+  });
+
+  it("returns 500 when merge fails unexpectedly", async () => {
+    getSessionUserMock.mockResolvedValue({ id: "user-1" });
+    mergeGuestCartIntoUserCartMock.mockRejectedValueOnce(new Error("merge failed"));
+
+    const request = new Request("http://localhost:3000/api/cart/merge", {
+      method: "POST",
+      body: JSON.stringify({
+        items: [{ variantId: "variant-1", quantity: 1 }],
+      }),
+    });
+
+    const response = await POST(request);
+
+    expect(response.status).toBe(500);
+    expect(await response.json()).toEqual({ error: "Could not merge cart." });
+    expect(trackErrorMock).toHaveBeenCalled();
   });
 });

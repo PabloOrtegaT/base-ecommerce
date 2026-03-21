@@ -9,13 +9,15 @@ import {
   type CartItem,
   type CartState,
 } from "./cart";
-import { emptyCartMergeSummary, type CartMergeSummary } from "./merge-summary";
+import { createEmptyCartMergeSummary, type CartMergeSummary } from "./merge-summary";
 import { readCartFromStorage, writeCartToStorage } from "./storage";
 
 type CartSyncStatus = "idle" | "syncing" | "error";
+type CartAuthState = "unknown" | "authenticated" | "guest";
 
 type CartStoreState = {
   cart: CartState;
+  authState: CartAuthState;
   serverVersion: number | null;
   mergeSummary: CartMergeSummary;
   lastSyncSummary: CartMergeSummary;
@@ -30,6 +32,7 @@ type CartStoreState = {
   applyMergeSummary: (summary: CartMergeSummary) => void;
   clearMergeSummary: () => void;
   clearCart: () => void;
+  setAuthState: (authenticated: boolean) => void;
 };
 
 function getInitialCartState(): CartState {
@@ -99,7 +102,7 @@ async function persistCartToServer(cart: CartState, version: number | null) {
           kind: "conflict",
           payload: {
             cart: payload.cart,
-            summary: payload.summary ?? emptyCartMergeSummary,
+            summary: payload.summary ?? createEmptyCartMergeSummary(),
             version: payload.version,
           },
         } satisfies ServerSyncResult;
@@ -202,6 +205,10 @@ export const useCartStore = create<CartStoreState>((set, get) => {
   };
 
   const enqueueSync = (cart: CartState, variantIds: string[]) => {
+    if (get().authState !== "authenticated") {
+      return;
+    }
+
     queuedSnapshot = {
       cart,
       version: get().serverVersion,
@@ -220,9 +227,10 @@ export const useCartStore = create<CartStoreState>((set, get) => {
 
   return {
     cart: getInitialCartState(),
+    authState: "unknown",
     serverVersion: null,
-    mergeSummary: emptyCartMergeSummary,
-    lastSyncSummary: emptyCartMergeSummary,
+    mergeSummary: createEmptyCartMergeSummary(),
+    lastSyncSummary: createEmptyCartMergeSummary(),
     syncStatus: "idle",
     syncError: null,
     pendingVariantIds: [],
@@ -267,13 +275,36 @@ export const useCartStore = create<CartStoreState>((set, get) => {
       set({ mergeSummary: summary });
     },
     clearMergeSummary: () => {
-      set({ mergeSummary: emptyCartMergeSummary });
+      set({ mergeSummary: createEmptyCartMergeSummary() });
     },
     clearCart: () => {
       const variantIds = get().cart.items.map((item) => item.variantId);
       persistCart(emptyCartState);
       set({ cart: emptyCartState });
       enqueueSync(emptyCartState, variantIds);
+    },
+    setAuthState: (authenticated) => {
+      const nextAuthState: CartAuthState = authenticated ? "authenticated" : "guest";
+      const current = get();
+      if (current.authState === nextAuthState) {
+        return;
+      }
+
+      if (!authenticated) {
+        queuedSnapshot = null;
+        queuedVariantIds.clear();
+        pendingVariantIds.clear();
+        set({
+          authState: nextAuthState,
+          serverVersion: null,
+          pendingVariantIds: [],
+          syncStatus: "idle",
+          syncError: null,
+        });
+        return;
+      }
+
+      set({ authState: nextAuthState });
     },
   };
 });

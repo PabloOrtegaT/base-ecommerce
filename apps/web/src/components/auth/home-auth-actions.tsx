@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Button } from "@base-ecommerce/ui";
+import { useCartStore } from "@/features/cart/cart-store";
+import { runSingleFlight } from "@/lib/single-flight";
 
 type ViewerResponse = {
   authenticated: boolean;
@@ -11,31 +13,46 @@ type ViewerResponse = {
 
 export function HomeAuthActions() {
   const [viewer, setViewer] = useState<ViewerResponse | null>(null);
+  const setCartAuthState = useCartStore((state) => state.setAuthState);
 
   useEffect(() => {
-    const controller = new AbortController();
+    let active = true;
 
     const run = async () => {
       try {
-        const response = await fetch("/api/auth/viewer", {
-          method: "GET",
-          cache: "no-store",
-          signal: controller.signal,
+        const payload = await runSingleFlight<ViewerResponse | null>("auth-viewer", async () => {
+          const response = await fetch("/api/auth/viewer", {
+            method: "GET",
+            cache: "no-store",
+          });
+          if (!response.ok) {
+            return null;
+          }
+          return (await response.json()) as ViewerResponse;
         });
-        if (!response.ok) {
+        if (!active) {
+          return;
+        }
+        if (!payload) {
+          setCartAuthState(false);
           setViewer({ authenticated: false });
           return;
         }
-        const payload = (await response.json()) as ViewerResponse;
+        setCartAuthState(payload.authenticated);
         setViewer(payload);
       } catch {
-        setViewer({ authenticated: false });
+        if (active) {
+          setCartAuthState(false);
+          setViewer({ authenticated: false });
+        }
       }
     };
 
     void run();
-    return () => controller.abort();
-  }, []);
+    return () => {
+      active = false;
+    };
+  }, [setCartAuthState]);
 
   return (
     <>
@@ -50,4 +67,3 @@ export function HomeAuthActions() {
     </>
   );
 }
-

@@ -104,12 +104,17 @@ export async function getSessionUser() {
     await touchRefreshSessionById(session.user.sid);
   }
 
+  const persistedUser = await getUserById(session.user.id);
+  if (!persistedUser?.email) {
+    return null;
+  }
+
   return {
-    id: session.user.id,
-    email: session.user.email,
-    role: parsedRole.data,
-    name: session.user.name,
-    emailVerified: Boolean(session.user.emailVerified),
+    id: persistedUser.id,
+    email: persistedUser.email,
+    role: roleSchema.parse(persistedUser.role),
+    name: persistedUser.name,
+    emailVerified: Boolean(persistedUser.emailVerified),
     sid: session.user.sid,
     authenticatedAt: sessionDateFromIso(session.user.authenticatedAt),
   };

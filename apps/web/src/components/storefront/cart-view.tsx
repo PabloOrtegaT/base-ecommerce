@@ -1,17 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useSyncExternalStore } from "react";
 import { Button } from "@base-ecommerce/ui";
 import { calculateCartTotals, getUnavailableCartItems } from "@/features/cart/cart";
 import { useCartStore } from "@/features/cart/cart-store";
 import { formatCurrencyFromCents } from "@/features/catalog/pricing";
+import { runSingleFlight } from "@/lib/single-flight";
+import { CheckoutSessionForm } from "./checkout-session-form";
 
 type CartViewProps = {
   authenticated: boolean;
 };
 
 export function CartView({ authenticated }: CartViewProps) {
+  const hydrated = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false,
+  );
   const cart = useCartStore((state) => state.cart);
   const updateQuantity = useCartStore((state) => state.updateQuantity);
   const removeItem = useCartStore((state) => state.removeItem);
@@ -20,26 +27,62 @@ export function CartView({ authenticated }: CartViewProps) {
   const syncError = useCartStore((state) => state.syncError);
   const clearMergeSummary = useCartStore((state) => state.clearMergeSummary);
   const hydrateCart = useCartStore((state) => state.hydrateCart);
+  const setAuthState = useCartStore((state) => state.setAuthState);
 
   useEffect(() => {
+    if (!hydrated) {
+      return;
+    }
+    setAuthState(authenticated);
+  }, [authenticated, hydrated, setAuthState]);
+
+  useEffect(() => {
+    if (!hydrated) {
+      return;
+    }
     if (!authenticated) {
       return;
     }
 
+    let active = true;
     const loadServerCart = async () => {
-      const response = await fetch("/api/cart", { method: "GET" });
-      if (!response.ok) {
+      const payload = await runSingleFlight<{ cart: typeof cart; version: number } | null>(
+        "cart-snapshot",
+        async () => {
+          const response = await fetch("/api/cart", {
+            method: "GET",
+            cache: "no-store",
+          });
+          if (!response.ok) {
+            return null;
+          }
+          return (await response.json()) as { cart: typeof cart; version: number };
+        },
+      );
+
+      if (!active || !payload) {
         return;
       }
-      const payload = (await response.json()) as { cart: typeof cart; version: number };
       hydrateCart(payload.cart, { version: payload.version });
     };
 
-    loadServerCart();
-  }, [authenticated, hydrateCart]);
+    void loadServerCart();
+    return () => {
+      active = false;
+    };
+  }, [authenticated, hydrateCart, hydrated]);
 
   const totals = useMemo(() => calculateCartTotals(cart), [cart]);
   const unavailableItems = useMemo(() => getUnavailableCartItems(cart), [cart]);
+
+  if (!hydrated) {
+    return (
+      <main className="mx-auto w-full max-w-4xl space-y-4 px-6 py-10">
+        <h1 className="text-3xl font-semibold tracking-tight">Your cart</h1>
+        <p className="text-sm text-muted-foreground">Loading cart...</p>
+      </main>
+    );
+  }
 
   if (cart.items.length === 0) {
     return (
@@ -54,6 +97,7 @@ export function CartView({ authenticated }: CartViewProps) {
   }
 
   const currency = cart.items[0]?.currency ?? "MXN";
+  const canCheckout = unavailableItems.length === 0 && totals.itemCount > 0;
 
   return (
     <main className="mx-auto w-full max-w-4xl space-y-5 px-6 py-10">
@@ -145,6 +189,8 @@ export function CartView({ authenticated }: CartViewProps) {
         <p className="text-sm text-muted-foreground">Items available for checkout: {totals.itemCount}</p>
         <p className="text-lg font-semibold">Subtotal: {formatCurrencyFromCents(totals.subtotalCents, currency)}</p>
       </section>
+
+      <CheckoutSessionForm authenticated={authenticated} canCheckout={canCheckout} />
     </main>
   );
 }

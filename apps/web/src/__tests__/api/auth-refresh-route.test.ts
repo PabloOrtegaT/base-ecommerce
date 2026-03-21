@@ -7,6 +7,8 @@ const {
   getRequestClientContextMock,
   rotateRefreshSessionByTokenMock,
   normalizeHostMock,
+  enforceRateLimitMock,
+  getClientIpFromRequestMock,
 } = vi.hoisted(() => ({
   resolveSurfaceFromRequestMock: vi.fn(() => "storefront"),
   readRefreshTokenForCurrentRequestMock: vi.fn(),
@@ -14,6 +16,8 @@ const {
   getRequestClientContextMock: vi.fn(() => ({ userAgent: "vitest" })),
   rotateRefreshSessionByTokenMock: vi.fn(),
   normalizeHostMock: vi.fn((value: string | null | undefined) => (value ?? "").replace(/:\d+$/, "")),
+  enforceRateLimitMock: vi.fn(() => ({ allowed: true, retryAfterSeconds: 0 })),
+  getClientIpFromRequestMock: vi.fn(() => "127.0.0.1"),
 }));
 
 vi.mock("@/server/auth/refresh-cookie", () => ({
@@ -34,15 +38,32 @@ vi.mock("@/server/config/host-policy", () => ({
   normalizeHost: normalizeHostMock,
 }));
 
+vi.mock("@/server/security/rate-limit", () => ({
+  enforceRateLimit: enforceRateLimitMock,
+  getClientIpFromRequest: getClientIpFromRequestMock,
+}));
+
 import { POST } from "@/app/api/auth/refresh/route";
 
 describe("api/auth/refresh route", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    enforceRateLimitMock.mockReturnValue({ allowed: true, retryAfterSeconds: 0 });
     rotateRefreshSessionByTokenMock.mockResolvedValue({
       rawToken: "next-token",
       session: { id: "sid-next" },
     });
+  });
+
+  it("returns 429 when refresh attempts are rate-limited", async () => {
+    enforceRateLimitMock.mockReturnValueOnce({ allowed: false, retryAfterSeconds: 6 });
+    const request = new Request("http://localhost:3000/api/auth/refresh", { method: "POST" });
+
+    const response = await POST(request);
+
+    expect(response.status).toBe(429);
+    expect(response.headers.get("Retry-After")).toBe("6");
+    expect(await response.json()).toEqual({ error: "Too many refresh attempts." });
   });
 
   it("returns 401 when refresh token is missing", async () => {

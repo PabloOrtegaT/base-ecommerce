@@ -117,4 +117,28 @@ describe("api/auth/bootstrap route", () => {
       surface: "storefront",
     });
   });
+
+  it("creates refresh session directly when sid is missing", async () => {
+    getSessionUserMock.mockResolvedValue({
+      id: "user-3",
+      sid: null,
+    });
+    const request = new Request("http://localhost:3000/api/auth/bootstrap", {
+      method: "POST",
+      headers: {
+        host: "storefront.lvh.me:3000",
+      },
+    });
+
+    const response = await POST(request);
+
+    expect(rotateRefreshSessionByIdMock).not.toHaveBeenCalled();
+    expect(createRefreshSessionMock).toHaveBeenCalledWith("user-3", "storefront", { userAgent: "vitest" });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      ok: true,
+      sid: "sid-created",
+      surface: "storefront",
+    });
+  });
 });

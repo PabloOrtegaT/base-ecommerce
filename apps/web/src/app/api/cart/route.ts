@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/server/auth/session";
-import { emptyCartMergeSummary } from "@/features/cart/merge-summary";
+import { createEmptyCartMergeSummary } from "@/features/cart/merge-summary";
 import {
   getUserCartSnapshot,
-  reconcileCartStateAgainstServer,
+  reconcileCartState,
   replaceUserCart,
 } from "@/server/cart/service";
 import { trackError, trackWarn } from "@/server/observability/telemetry";
@@ -56,21 +56,18 @@ export async function POST(request: Request) {
 
   try {
     const currentSnapshot = await getUserCartSnapshot(user.id);
-    if (typeof expectedVersion === "number" && expectedVersion !== currentSnapshot.version) {
+    if (typeof expectedVersion !== "number" || expectedVersion !== currentSnapshot.version) {
       return NextResponse.json(
         {
           error: "Version conflict.",
           ...currentSnapshot,
-          summary: emptyCartMergeSummary,
+          summary: createEmptyCartMergeSummary(),
         },
         { status: 409 },
       );
     }
 
-    const reconciled = await reconcileCartStateAgainstServer({
-      requestedCart,
-      serverCart: currentSnapshot.cart,
-    });
+    const reconciled = await reconcileCartState(requestedCart);
     const replaceResult = await replaceUserCart(user.id, reconciled.cart, {
       expectedVersion: currentSnapshot.version,
     });
