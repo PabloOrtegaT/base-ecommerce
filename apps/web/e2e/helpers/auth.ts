@@ -65,17 +65,32 @@ export async function loginAsSeedOwner(page: Page, options: LoginOptions = {}) {
     await page.waitForURL((url) => url.pathname.startsWith("/auth/after-login") || url.pathname === "/admin" || url.pathname.startsWith("/admin/"), {
       timeout: 30000,
     });
-    await page.waitForURL((url) => url.pathname === "/admin" || url.pathname.startsWith("/admin/"), { timeout: 30000 });
+    const currentPath = new URL(page.url()).pathname;
+    if (!(currentPath === "/admin" || currentPath.startsWith("/admin/"))) {
+      await page.goto(nextPath);
+    }
+    await page.waitForURL((url) => url.pathname === "/admin" || url.pathname.startsWith("/admin/"), {
+      timeout: 30000,
+    });
     assertStaysOnAllowedHost(page);
     return;
   }
 
   await page.waitForURL(
-    (url) => url.pathname.startsWith("/auth/after-login") || url.pathname.startsWith("/auth/sync-cart") || url.pathname === "/cart" || url.pathname.startsWith("/cart/"),
+    (url) =>
+      url.pathname.startsWith("/auth/after-login") ||
+      url.pathname.startsWith("/auth/sync-cart") ||
+      url.pathname === "/" ||
+      url.pathname === "/cart" ||
+      url.pathname.startsWith("/cart/"),
     {
       timeout: 30000,
     },
   );
+  const currentPath = new URL(page.url()).pathname;
+  if (!(currentPath === "/cart" || currentPath.startsWith("/cart/"))) {
+    await page.goto("/cart");
+  }
   await page.waitForURL((url) => url.pathname === "/cart" || url.pathname.startsWith("/cart/"), { timeout: 30000 });
   assertStaysOnAllowedHost(page);
 }
