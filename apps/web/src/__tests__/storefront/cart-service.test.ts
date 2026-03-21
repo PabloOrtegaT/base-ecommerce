@@ -1,11 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { cartItemsTable, cartsTable } from "@/server/db/schema";
 
-const { getActiveStoreProfileMock, getProfileRuntimeStoreMock, mergeCartStatesMock, getDbMock } = vi.hoisted(() => ({
+const {
+  getActiveStoreProfileMock,
+  getProfileRuntimeStoreMock,
+  mergeCartStatesMock,
+  getDbMock,
+  getCanonicalVariantAvailabilityMock,
+} = vi.hoisted(() => ({
   getActiveStoreProfileMock: vi.fn(() => "pc-components"),
   getProfileRuntimeStoreMock: vi.fn(),
   mergeCartStatesMock: vi.fn(),
   getDbMock: vi.fn(),
+  getCanonicalVariantAvailabilityMock: vi.fn(),
 }));
 
 vi.mock("@/server/config/store-profile", () => ({
@@ -22,6 +29,10 @@ vi.mock("@/server/cart/merge", () => ({
 
 vi.mock("@/server/db/client", () => ({
   getDb: getDbMock,
+}));
+
+vi.mock("@/server/inventory/service", () => ({
+  getCanonicalVariantAvailability: getCanonicalVariantAvailabilityMock,
 }));
 
 import {
@@ -170,6 +181,25 @@ describe("server cart service", () => {
       cart: { items: [{ variantId: "var-1", quantity: 1 }] },
       summary: { mergedLines: [], adjustedLines: [], unavailableLines: [], messages: [] },
     });
+    getCanonicalVariantAvailabilityMock.mockImplementation(async (variantId: string) => {
+      if (variantId === "var-1") {
+        return {
+          variantId,
+          stockOnHand: 3,
+          availableToSell: 3,
+          reservedQty: 0,
+          isPurchasable: true,
+        };
+      }
+      return {
+        variantId,
+        stockOnHand: 0,
+        availableToSell: 0,
+        reservedQty: 0,
+        isPurchasable: false,
+        reason: "Variant not found.",
+      };
+    });
   });
 
   it("reads user cart lines from persistence", async () => {
@@ -256,14 +286,16 @@ describe("server cart service", () => {
     });
     expect(result.cart.items).toHaveLength(1);
 
-    const availability = getVariantAvailability("var-1");
+    const availability = await getVariantAvailability("var-1");
     expect(availability).toEqual({
       variantId: "var-1",
       stockOnHand: 3,
+      availableToSell: 3,
+      reservedQty: 0,
       isPurchasable: true,
     });
 
-    const unavailable = getVariantAvailability("missing");
+    const unavailable = await getVariantAvailability("missing");
     expect(unavailable.isPurchasable).toBe(false);
   });
 

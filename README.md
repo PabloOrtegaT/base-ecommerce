@@ -77,17 +77,38 @@ E2E defaults:
 
 - Storefront host: `http://storefront.lvh.me:3000`
 - Admin host: `http://admin.lvh.me:3000`
-- E2E always runs local migration + seed before starting dev server.
-- Set `PLAYWRIGHT_REUSE_EXISTING_SERVER=1` only if you intentionally want to reuse a running server.
+- E2E skips local migration + seed by default for faster startup.
+- Set `PLAYWRIGHT_RUN_DB_BOOTSTRAP=1` to run migration/seed during Playwright startup when needed.
+- E2E reuses an existing local server by default; set `PLAYWRIGHT_REUSE_EXISTING_SERVER=0` to force fresh startup.
 - Set `PLAYWRIGHT_PORT` to change E2E server port if needed.
+- Set `PLAYWRIGHT_BASE_URL` / `PLAYWRIGHT_ADMIN_BASE_URL` when you want localhost-only runs instead of host-split URLs.
+- Playwright uses a dedicated dist dir (`.next-playwright`) by default to avoid `.next` lock collisions with other running dev servers.
+- Set `PLAYWRIGHT_WEB_SERVER_READY_URL` if your local environment needs a different readiness probe URL.
 
-## D05 Auth + Cart foundation (partial D05 — payments/orders pending)
+## D05 Auth + Cart + Checkout foundation (Phase 2 implemented)
 
 - Auth stack: Auth.js (`next-auth`) + Drizzle adapter + JWT sessions + rotating refresh sessions.
 - Persistence: Cloudflare D1 (`DB` binding) + Drizzle migrations.
 - Guest cart merges into authenticated server cart after login via `/auth/sync-cart`.
+- Checkout session route: `POST /api/checkout/session` (card-first + optional Mercado Pago/PayPal provider methods).
+- Checkout validates current stock at session creation and blocks only immediate stock conflicts (`409 insufficient_stock`).
+- Orders persistence: `order`, `orderItem`, `orderStatusTimeline`, `paymentAttempt` tables in D1.
+- Webhook idempotency: `POST /api/payments/webhook/[provider]` stores unique provider-event ids before order transitions.
+- Successful payments decrement `inventoryStock`; oversell after checkout start is currently accepted and stock clamps at `0`.
 - Dedicated admin host routing is enforced by proxy when `ADMIN_BASE_URL` differs from `APP_BASE_URL`.
 - When storefront/admin use subdomains of the same parent domain, auth and refresh cookies use a shared parent-domain scope for cross-subdomain continuity.
+
+Payment env vars (optional, live mode):
+
+- `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+- `MERCADOPAGO_ACCESS_TOKEN`
+- `MERCADOPAGO_WEBHOOK_SECRET`
+- `PAYPAL_CLIENT_ID`
+- `PAYPAL_CLIENT_SECRET`
+- `PAYPAL_WEBHOOK_ID`
+
+If these are missing, checkout methods stay available in mock mode using `/checkout/mock`.
 
 ## Documentation
 
@@ -160,3 +181,4 @@ Set repository secrets:
 
 - `CLOUDFLARE_ACCOUNT_ID`
 - `CLOUDFLARE_API_TOKEN`
+

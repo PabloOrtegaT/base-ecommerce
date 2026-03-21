@@ -7,6 +7,9 @@ const {
   setFlashToastMock,
   mapAdminMutationErrorMock,
   adminServiceMocks,
+  syncInventoryFromRuntimeCatalogMock,
+  syncInventoryFromRuntimeCatalogForProductMock,
+  syncInventoryFromRuntimeCatalogForVariantMock,
 } = vi.hoisted(() => ({
   revalidatePathMock: vi.fn(),
   redirectMock: vi.fn((path: string) => {
@@ -36,6 +39,9 @@ const {
     setAdminCouponActive: vi.fn(),
     importAdminCatalogFromCsv: vi.fn(),
   },
+  syncInventoryFromRuntimeCatalogMock: vi.fn(),
+  syncInventoryFromRuntimeCatalogForProductMock: vi.fn(),
+  syncInventoryFromRuntimeCatalogForVariantMock: vi.fn(),
 }));
 
 vi.mock("next/cache", () => ({
@@ -65,6 +71,12 @@ vi.mock("@/server/admin/mutation-errors", async () => {
     mapAdminMutationError: mapAdminMutationErrorMock,
   };
 });
+
+vi.mock("@/server/inventory/service", () => ({
+  syncInventoryFromRuntimeCatalog: syncInventoryFromRuntimeCatalogMock,
+  syncInventoryFromRuntimeCatalogForProduct: syncInventoryFromRuntimeCatalogForProductMock,
+  syncInventoryFromRuntimeCatalogForVariant: syncInventoryFromRuntimeCatalogForVariantMock,
+}));
 
 import {
   createCategoryAction,
@@ -118,6 +130,13 @@ describe("admin actions", () => {
       importedVariants: 1,
       errors: [],
     });
+    adminServiceMocks.createAdminProduct.mockReturnValue({ id: "prod-1" });
+    adminServiceMocks.updateAdminProduct.mockReturnValue({ id: "prod-1" });
+    adminServiceMocks.createAdminVariant.mockReturnValue({ id: "var-1" });
+    adminServiceMocks.updateAdminVariant.mockReturnValue({ id: "var-1" });
+    syncInventoryFromRuntimeCatalogMock.mockResolvedValue(undefined);
+    syncInventoryFromRuntimeCatalogForProductMock.mockResolvedValue(undefined);
+    syncInventoryFromRuntimeCatalogForVariantMock.mockResolvedValue(undefined);
   });
 
   it("creates category and redirects with success toast", async () => {

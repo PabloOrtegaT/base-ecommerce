@@ -2,7 +2,7 @@ import Link from "next/link";
 import { AccessDenied } from "@/components/admin/access-denied";
 import { AnalyticsCharts } from "@/components/admin/analytics-charts";
 import { OrdersTable } from "@/components/admin/tables";
-import { listAdminDashboardAnalytics, listAdminOrders } from "@/server/admin/admin-service";
+import { listAdminDashboardAnalyticsReadModel, listAdminOrdersReadModel } from "@/server/admin/admin-service";
 import { getRouteAccess } from "@/server/admin/role-guard";
 import { getAdminContentSnapshot } from "@/server/data/storefront-service";
 
@@ -13,8 +13,10 @@ export default async function AdminPage() {
   }
 
   const snapshot = getAdminContentSnapshot();
-  const orders = listAdminOrders();
-  const analytics = listAdminDashboardAnalytics();
+  const [orders, analytics] = await Promise.all([
+    listAdminOrdersReadModel(),
+    listAdminDashboardAnalyticsReadModel(),
+  ]);
 
   return (
     <main className="space-y-6">

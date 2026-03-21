@@ -119,6 +119,20 @@ export const cartItemsTable = sqliteTable(
   }),
 );
 
+export const inventoryStocksTable = sqliteTable(
+  "inventoryStock",
+  {
+    variantId: text("variantId").primaryKey(),
+    onHandQty: integer("onHandQty").notNull(),
+    availableQty: integer("availableQty").notNull(),
+    createdAt: integer("createdAt", { mode: "timestamp_ms" }).notNull().default(nowSql),
+    updatedAt: integer("updatedAt", { mode: "timestamp_ms" }).notNull().default(nowSql),
+  },
+  (table) => ({
+    availableIdx: index("inventory_stock_available_idx").on(table.availableQty),
+  }),
+);
+
 export const authRefreshSessionsTable = sqliteTable(
   "authRefreshSession",
   {
@@ -143,6 +157,132 @@ export const authRefreshSessionsTable = sqliteTable(
   (table) => ({
     tokenHashIdx: uniqueIndex("auth_refresh_session_token_hash_unique").on(table.tokenHash),
     userSurfaceIdx: index("auth_refresh_session_user_surface_idx").on(table.userId, table.surface),
+  }),
+);
+
+export const ordersTable = sqliteTable(
+  "order",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    userId: text("userId")
+      .notNull()
+      .references(() => usersTable.id, { onDelete: "cascade" }),
+    orderNumber: text("orderNumber").notNull(),
+    status: text("status").notNull().default("pending_payment"),
+    paymentStatus: text("paymentStatus").notNull().default("pending"),
+    paymentProvider: text("paymentProvider"),
+    paymentSessionId: text("paymentSessionId"),
+    paymentReference: text("paymentReference"),
+    currency: text("currency").notNull(),
+    subtotalCents: integer("subtotalCents").notNull(),
+    discountCents: integer("discountCents").notNull().default(0),
+    shippingCents: integer("shippingCents").notNull().default(0),
+    totalCents: integer("totalCents").notNull(),
+    itemCount: integer("itemCount").notNull(),
+    couponCode: text("couponCode"),
+    couponSnapshot: text("couponSnapshot"),
+    createdAt: integer("createdAt", { mode: "timestamp_ms" }).notNull().default(nowSql),
+    updatedAt: integer("updatedAt", { mode: "timestamp_ms" }).notNull().default(nowSql),
+  },
+  (table) => ({
+    orderNumberIdx: uniqueIndex("order_order_number_unique").on(table.orderNumber),
+    paymentSessionIdx: uniqueIndex("order_payment_session_unique").on(table.paymentSessionId),
+    userCreatedAtIdx: index("order_user_created_at_idx").on(table.userId, table.createdAt),
+  }),
+);
+
+export const orderItemsTable = sqliteTable(
+  "orderItem",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    orderId: text("orderId")
+      .notNull()
+      .references(() => ordersTable.id, { onDelete: "cascade" }),
+    productId: text("productId").notNull(),
+    variantId: text("variantId").notNull(),
+    name: text("name").notNull(),
+    variantName: text("variantName").notNull(),
+    href: text("href").notNull(),
+    currency: text("currency").notNull(),
+    unitPriceCents: integer("unitPriceCents").notNull(),
+    quantity: integer("quantity").notNull(),
+    lineTotalCents: integer("lineTotalCents").notNull(),
+    unavailableReason: text("unavailableReason"),
+    createdAt: integer("createdAt", { mode: "timestamp_ms" }).notNull().default(nowSql),
+  },
+  (table) => ({
+    orderIdx: index("order_item_order_idx").on(table.orderId),
+  }),
+);
+
+export const orderStatusTimelineTable = sqliteTable(
+  "orderStatusTimeline",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    orderId: text("orderId")
+      .notNull()
+      .references(() => ordersTable.id, { onDelete: "cascade" }),
+    status: text("status").notNull(),
+    actorType: text("actorType").notNull().default("system"),
+    actorId: text("actorId"),
+    note: text("note"),
+    createdAt: integer("createdAt", { mode: "timestamp_ms" }).notNull().default(nowSql),
+  },
+  (table) => ({
+    orderCreatedIdx: index("order_status_timeline_order_created_idx").on(table.orderId, table.createdAt),
+  }),
+);
+
+export const paymentAttemptsTable = sqliteTable(
+  "paymentAttempt",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    orderId: text("orderId")
+      .notNull()
+      .references(() => ordersTable.id, { onDelete: "cascade" }),
+    provider: text("provider").notNull(),
+    providerSessionId: text("providerSessionId").notNull(),
+    status: text("status").notNull().default("created"),
+    checkoutUrl: text("checkoutUrl"),
+    amountCents: integer("amountCents").notNull(),
+    currency: text("currency").notNull(),
+    errorCode: text("errorCode"),
+    errorMessage: text("errorMessage"),
+    createdAt: integer("createdAt", { mode: "timestamp_ms" }).notNull().default(nowSql),
+    updatedAt: integer("updatedAt", { mode: "timestamp_ms" }).notNull().default(nowSql),
+  },
+  (table) => ({
+    providerSessionIdx: uniqueIndex("payment_attempt_provider_session_unique").on(table.provider, table.providerSessionId),
+    orderIdx: index("payment_attempt_order_idx").on(table.orderId),
+  }),
+);
+
+export const paymentWebhookEventsTable = sqliteTable(
+  "paymentWebhookEvent",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    provider: text("provider").notNull(),
+    eventId: text("eventId").notNull(),
+    eventType: text("eventType").notNull(),
+    orderId: text("orderId").references(() => ordersTable.id, { onDelete: "set null" }),
+    payload: text("payload").notNull(),
+    outcome: text("outcome").notNull().default("received"),
+    receivedAt: integer("receivedAt", { mode: "timestamp_ms" }).notNull().default(nowSql),
+    processedAt: integer("processedAt", { mode: "timestamp_ms" }),
+  },
+  (table) => ({
+    providerEventIdx: uniqueIndex("payment_webhook_event_provider_event_unique").on(table.provider, table.eventId),
+    orderIdx: index("payment_webhook_event_order_idx").on(table.orderId),
   }),
 );
 

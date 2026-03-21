@@ -10,11 +10,12 @@ Implement customer identity flows and reliable checkout with cart continuity, or
   - Identity lifecycle (email/password + OAuth flags), JWT + rotating refresh sessions.
   - RBAC/session guard boundaries for admin.
   - Guest/authenticated cart sync, merge summary, coalesced writes, stock reconciliation.
-- Phase 2 (next):
+- Phase 2 (implemented baseline):
   - Checkout session creation, provider adapters (card-first + optional methods), coupon totals in checkout pipeline.
   - Orders persistence and status timeline wiring.
+  - Webhook idempotency foundation with provider-event deduplication and deterministic order transitions.
 - Phase 3 (next):
-  - Webhook idempotency, risk/review workflow, payments operations hardening and telemetry.
+  - Risk/review workflow, payments operations hardening, and telemetry expansion.
 
 ## Scope
 
@@ -58,6 +59,11 @@ Implement customer identity flows and reliable checkout with cart continuity, or
   - password reset tokens
   - carts
   - cart items
+  - orders
+  - order items
+  - order status timeline
+  - payment attempts
+  - payment webhook events (idempotency ledger)
 
 ### Identity/session contract
 
@@ -103,6 +109,14 @@ Implement customer identity flows and reliable checkout with cart continuity, or
   - `GOOGLE_CLIENT_SECRET`
   - `FACEBOOK_CLIENT_ID`
   - `FACEBOOK_CLIENT_SECRET`
+  - `STRIPE_SECRET_KEY`
+  - `STRIPE_WEBHOOK_SECRET`
+  - `MERCADOPAGO_ACCESS_TOKEN`
+  - `MERCADOPAGO_WEBHOOK_SECRET`
+  - `PAYPAL_CLIENT_ID`
+  - `PAYPAL_CLIENT_SECRET`
+  - `PAYPAL_WEBHOOK_ID`
+  - `MOCK_PAYMENT_WEBHOOK_SECRET`
 - Required Cloudflare binding:
   - D1 binding `DB`
 
@@ -137,6 +151,13 @@ Implement customer identity flows and reliable checkout with cart continuity, or
 - Add lightweight variant availability endpoint for product pages and disable add-to-cart when availability is exhausted.
 - Define payment provider abstraction layer.
 - Keep card flow as default/primary checkout option and render optional methods as secondary options.
+- Validate inventory at checkout-session creation:
+  - Re-read canonical cart and compare requested quantities against `inventoryStock.availableQty`.
+  - Return deterministic `insufficient_stock` payload (`409`) when validation fails.
+- Keep oversell policy explicit for now:
+  - Successful payment decrements `inventoryStock.onHandQty` and `inventoryStock.availableQty`.
+  - Inventory values clamp at zero rather than going negative.
+  - No timed reservation/hold window is used in this phase.
 - Add risk controls:
   - 3DS when available.
   - Velocity checks.
@@ -192,6 +213,7 @@ Implement customer identity flows and reliable checkout with cart continuity, or
 - Password reset works end-to-end for email/password accounts.
 - Guest cart is preserved and professionally merged into authenticated cart at login with deterministic conflict handling.
 - Orders and payments remain consistent under retries.
+- Checkout blocks only immediate stock conflicts; oversell after checkout start is currently accepted until a later inventory-reservation pass is introduced.
 - Webhooks are safe against duplicate delivery.
 - Coupon discounts are applied correctly and never discount shipping.
 - Admin can inspect and act on payment/order state.
@@ -209,3 +231,5 @@ Implement customer identity flows and reliable checkout with cart continuity, or
 - `docs/flows/05-payments-orders/` flow documents.
 - `docs/flows/05-payments-orders/auth-lifecycle-and-rbac-flow.md`.
 - `docs/flows/05-payments-orders/guest-cart-merge-flow.md`.
+- `docs/flows/05-payments-orders/checkout-and-provider-lifecycle-flow.md`.
+- `docs/flows/05-payments-orders/webhook-idempotency-order-transition-flow.md`.

@@ -7,6 +7,7 @@ Add docs for:
 - Dedicated admin host policy and host-level route boundaries.
 - Guest/authenticated cart synchronization and merge behavior.
 - Checkout flow and totals with coupon application.
+- Inventory validation and payment-time stock decrement lifecycle.
 - Payment lifecycle and webhook idempotency.
 - Antifraud controls and risk-review operations.
 - Order status transitions and admin evidence handling.
@@ -15,9 +16,15 @@ Add docs for:
 
 - `auth-lifecycle-and-rbac-flow.md`
 - `guest-cart-merge-flow.md`
+- `checkout-and-provider-lifecycle-flow.md`
+- `webhook-idempotency-order-transition-flow.md`
+
+### Phase 2 status note
+
+- Checkout validates current stock at session creation and returns deterministic `409` stock conflicts.
+- `POST /api/checkout/session` no longer returns hold metadata.
+- Webhooks stay idempotent and decrement inventory on successful payment only.
 
 ## Pending for next phase
 
-- Checkout/payment provider lifecycle flow.
-- Webhook idempotency and order-status transition flow.
 - Risk/review operations flow.

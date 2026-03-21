@@ -5,6 +5,7 @@ import { getActiveStoreProfile } from "@/server/config/store-profile";
 import { getDb } from "@/server/db/client";
 import { cartItemsTable, cartsTable } from "@/server/db/schema";
 import { getProfileRuntimeStore } from "@/server/data/runtime-store";
+import { getCanonicalVariantAvailability } from "@/server/inventory/service";
 import { mergeCartStates, type VariantResolution } from "./merge";
 
 function nowDate() {
@@ -218,6 +219,62 @@ export function resolveVariantFromActiveCatalog(variantId: string): VariantResol
   };
 }
 
+async function resolveVariantFromCanonicalCatalog(variantId: string): Promise<VariantResolution> {
+  const profile = getActiveStoreProfile();
+  const store = getProfileRuntimeStore(profile);
+  const variant = store.variants.find((entry) => entry.id === variantId);
+  if (!variant) {
+    return {
+      status: "unavailable",
+      reason: "Variant not found.",
+    };
+  }
+
+  const product = store.products.find((entry) => entry.id === variant.productId);
+  if (!product) {
+    return {
+      status: "unavailable",
+      reason: "Product not found.",
+    };
+  }
+
+  const category = store.categories.find((entry) => entry.id === product.categoryId);
+  const href = category ? `/catalog/${category.slug}/${product.slug}` : `/catalog`;
+  const availability = await getCanonicalVariantAvailability(variantId);
+  if (product.status !== "active" || !availability.isPurchasable || availability.availableToSell <= 0) {
+    return {
+      status: "unavailable",
+      reason: availability.reason ?? "Variant is out of stock.",
+      fallbackItem: {
+        productId: product.id,
+        variantId: variant.id,
+        name: product.name,
+        variantName: variant.name,
+        href,
+        currency: product.currency,
+        unitPriceCents: variant.priceCents,
+        stockOnHand: availability.availableToSell,
+        unavailableReason: availability.reason ?? "Variant is out of stock.",
+      },
+    };
+  }
+
+  return {
+    status: "available",
+    item: {
+      productId: product.id,
+      variantId: variant.id,
+      name: product.name,
+      variantName: variant.name,
+      href,
+      currency: product.currency,
+      unitPriceCents: variant.priceCents,
+      stockOnHand: availability.availableToSell,
+    },
+    stockOnHand: availability.availableToSell,
+  };
+}
+
 export async function reconcileCartState(cart: CartState): Promise<{
   cart: CartState;
   summary: CartMergeSummary;
@@ -225,7 +282,7 @@ export async function reconcileCartState(cart: CartState): Promise<{
   return mergeCartStates({
     guestCart: cart,
     serverCart: { items: [] },
-    resolveVariant: resolveVariantFromActiveCatalog,
+    resolveVariant: resolveVariantFromCanonicalCatalog,
   });
 }
 
@@ -239,25 +296,19 @@ export async function reconcileCartStateAgainstServer(input: {
   return mergeCartStates({
     guestCart: input.requestedCart,
     serverCart: input.serverCart,
-    resolveVariant: resolveVariantFromActiveCatalog,
+    resolveVariant: resolveVariantFromCanonicalCatalog,
   });
 }
 
-export function getVariantAvailability(variantId: string) {
-  const resolution = resolveVariantFromActiveCatalog(variantId);
-  if (resolution.status === "available") {
-    return {
-      variantId,
-      stockOnHand: resolution.stockOnHand,
-      isPurchasable: true,
-    };
-  }
-
+export async function getVariantAvailability(variantId: string) {
+  const availability = await getCanonicalVariantAvailability(variantId);
   return {
     variantId,
-    stockOnHand: resolution.fallbackItem?.stockOnHand ?? 0,
-    isPurchasable: false,
-    reason: resolution.reason,
+    stockOnHand: availability.stockOnHand,
+    availableToSell: availability.availableToSell,
+    reservedQty: availability.reservedQty,
+    isPurchasable: availability.isPurchasable,
+    ...(availability.reason ? { reason: availability.reason } : {}),
   };
 }
 
@@ -270,7 +321,7 @@ export async function mergeGuestCartIntoUserCart(userId: string, guestCart: Cart
   const merged = await mergeCartStates({
     guestCart,
     serverCart: existing.cart,
-    resolveVariant: resolveVariantFromActiveCatalog,
+    resolveVariant: resolveVariantFromCanonicalCatalog,
   });
   const replaceResult = await replaceUserCart(userId, merged.cart);
   if (!replaceResult.ok) {

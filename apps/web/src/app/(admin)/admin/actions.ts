@@ -25,6 +25,11 @@ import { ensurePermission } from "@/server/admin/role-guard";
 import type { AdminVariantStockMode } from "@/server/admin/stock-mode";
 import { getSessionUser } from "@/server/auth/session";
 import { setFlashToast } from "@/server/feedback/flash-toast";
+import {
+  syncInventoryFromRuntimeCatalog,
+  syncInventoryFromRuntimeCatalogForProduct,
+  syncInventoryFromRuntimeCatalogForVariant,
+} from "@/server/inventory/service";
 
 type MutationConfig = {
   action: string;
@@ -189,7 +194,7 @@ export async function createProductAction(formData: FormData) {
       await ensurePermission("catalog:write");
       const description = getOptionalString(formData, "description");
       const compareAtPriceCents = getOptionalNumber(formData, "compareAtPriceCents");
-      createAdminProduct({
+      const product = createAdminProduct({
         name: getRequiredString(formData, "name"),
         categoryId: getRequiredString(formData, "categoryId"),
         slug: getRequiredString(formData, "slug"),
@@ -202,6 +207,7 @@ export async function createProductAction(formData: FormData) {
         currency: getRequiredString(formData, "currency") as "MXN" | "USD",
         status: getRequiredString(formData, "status") as "draft" | "active" | "archived",
       });
+      await syncInventoryFromRuntimeCatalogForProduct(product.id);
     },
   });
 }
@@ -215,7 +221,7 @@ export async function updateProductAction(formData: FormData) {
       await ensurePermission("catalog:write");
       const description = getOptionalString(formData, "description");
       const compareAtPriceCents = getOptionalNumber(formData, "compareAtPriceCents");
-      updateAdminProduct({
+      const product = updateAdminProduct({
         id: getRequiredString(formData, "id"),
         categoryId: getRequiredString(formData, "categoryId"),
         name: getRequiredString(formData, "name"),
@@ -228,6 +234,7 @@ export async function updateProductAction(formData: FormData) {
         tags: parseTagList(formData, "tags"),
         status: getRequiredString(formData, "status") as "draft" | "active" | "archived",
       });
+      await syncInventoryFromRuntimeCatalogForProduct(product.id);
     },
   });
 }
@@ -240,7 +247,7 @@ export async function createVariantAction(formData: FormData) {
     run: async () => {
       await ensurePermission("catalog:write");
       const compareAtPriceCents = getOptionalNumber(formData, "compareAtPriceCents");
-      createAdminVariant({
+      const variant = createAdminVariant({
         productId: getRequiredString(formData, "productId"),
         sku: getRequiredString(formData, "sku"),
         name: getRequiredString(formData, "name"),
@@ -249,6 +256,7 @@ export async function createVariantAction(formData: FormData) {
         stockOnHand: getRequiredNumber(formData, "stockOnHand"),
         isDefault: isChecked(formData, "isDefault"),
       });
+      await syncInventoryFromRuntimeCatalogForVariant(variant.id);
     },
   });
 }
@@ -261,7 +269,7 @@ export async function updateVariantAction(formData: FormData) {
     run: async () => {
       await ensurePermission("catalog:write");
       const compareAtPriceCents = getOptionalNumber(formData, "compareAtPriceCents");
-      updateAdminVariant({
+      const variant = updateAdminVariant({
         id: getRequiredString(formData, "id"),
         sku: getRequiredString(formData, "sku"),
         name: getRequiredString(formData, "name"),
@@ -271,6 +279,7 @@ export async function updateVariantAction(formData: FormData) {
         stockValue: getRequiredNumber(formData, "stockValue"),
         isDefault: isChecked(formData, "isDefault"),
       });
+      await syncInventoryFromRuntimeCatalogForVariant(variant.id);
     },
   });
 }
@@ -423,6 +432,7 @@ export async function importCatalogCsvAction(csvText: string) {
   try {
     await ensurePermission("catalog:write");
     const result = importAdminCatalogFromCsv(csvText);
+    await syncInventoryFromRuntimeCatalog();
     revalidateAdminAndStorefrontPaths();
     logAdminAuditEvent({
       action: "catalog.import_csv",

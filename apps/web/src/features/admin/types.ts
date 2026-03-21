@@ -42,7 +42,13 @@ export type AdminVariantRow = {
   updatedAt: string;
 };
 
-export type AdminOrderStatus = "pending" | "paid" | "shipped" | "cancelled";
+export type AdminOrderStatus =
+  | "pending"
+  | "pending_payment"
+  | "paid"
+  | "payment_failed"
+  | "shipped"
+  | "cancelled";
 
 export type AdminOrderRow = {
   id: string;

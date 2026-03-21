@@ -1,7 +1,33 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { getActiveStoreProfile } from "@/server/config/store-profile";
 import { getProfileRuntimeStore } from "@/server/data/runtime-store";
 import { reconcileCartState } from "@/server/cart/service";
+
+vi.mock("@/server/inventory/service", () => ({
+  getCanonicalVariantAvailability: vi.fn(async (variantId: string) => {
+    const profile = getActiveStoreProfile();
+    const store = getProfileRuntimeStore(profile);
+    const variant = store.variants.find((entry) => entry.id === variantId);
+    if (!variant) {
+      return {
+        variantId,
+        stockOnHand: 0,
+        availableToSell: 0,
+        reservedQty: 0,
+        isPurchasable: false,
+        reason: "Variant not found.",
+      };
+    }
+    return {
+      variantId,
+      stockOnHand: variant.stockOnHand,
+      availableToSell: variant.stockOnHand,
+      reservedQty: 0,
+      isPurchasable: variant.stockOnHand > 0,
+      ...(variant.stockOnHand > 0 ? {} : { reason: "Variant is out of stock." }),
+    };
+  }),
+}));
 
 describe("server cart reconciliation", () => {
   it("clamps quantity to stock and keeps unavailable lines", async () => {

@@ -8,6 +8,6 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Missing variantId." }, { status: 400 });
   }
 
-  const availability = getVariantAvailability(variantId);
+  const availability = await getVariantAvailability(variantId);
   return NextResponse.json(availability);
 }

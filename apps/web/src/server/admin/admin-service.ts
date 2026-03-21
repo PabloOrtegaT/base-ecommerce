@@ -41,6 +41,7 @@ import { parseProductCsv } from "./csv-import";
 import { getProfileRuntimeStore } from "@/server/data/runtime-store";
 import { createAdminMutationError } from "./mutation-errors";
 import { resolveVariantStockOnHand, type AdminVariantStockMode } from "./stock-mode";
+import { listOrdersForAdmin as listPersistedOrdersForAdmin } from "@/server/orders/service";
 
 function nowIso() {
   return new Date().toISOString();
@@ -930,5 +931,79 @@ export function importAdminCatalogFromCsv(csvText: string): CsvImportResult {
     importedProducts,
     importedVariants,
     errors,
+  };
+}
+
+function toAdminOrderStatus(status: string): AdminOrderRow["status"] {
+  if (status === "pending_payment") {
+    return "pending_payment";
+  }
+  if (status === "payment_failed") {
+    return "payment_failed";
+  }
+  if (status === "paid") {
+    return "paid";
+  }
+  if (status === "cancelled") {
+    return "cancelled";
+  }
+  return "pending";
+}
+
+export async function listAdminOrdersReadModel(): Promise<AdminOrderRow[]> {
+  const persisted = await listPersistedOrdersForAdmin();
+  if (persisted.length === 0) {
+    return listAdminOrders();
+  }
+
+  return persisted.map((entry) => ({
+    id: entry.order.id,
+    orderNumber: entry.order.orderNumber,
+    status: toAdminOrderStatus(entry.order.status),
+    totalCents: entry.order.totalCents,
+    currency: entry.order.currency as Currency,
+    itemCount: entry.order.itemCount,
+    productLabel: entry.leadItem?.name ?? "Catalog item",
+    createdAt: entry.order.createdAt.toISOString(),
+  }));
+}
+
+export async function listAdminDashboardAnalyticsReadModel() {
+  const orders = await listAdminOrdersReadModel();
+
+  const salesByDate = orders.reduce<Map<string, number>>((accumulator, order) => {
+    const date = order.createdAt.slice(0, 10);
+    const current = accumulator.get(date) ?? 0;
+    accumulator.set(date, current + order.totalCents);
+    return accumulator;
+  }, new Map());
+  const salesTrend: SalesTrendPoint[] = Array.from(salesByDate.entries())
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([date, totalCents]) => ({ date, totalCents }));
+
+  const revenueByProduct = orders.reduce<Map<string, number>>((accumulator, order) => {
+    const current = accumulator.get(order.productLabel) ?? 0;
+    accumulator.set(order.productLabel, current + order.totalCents);
+    return accumulator;
+  }, new Map());
+  const topProducts: TopProductPoint[] = Array.from(revenueByProduct.entries())
+    .map(([name, revenueCents]) => ({ name, revenueCents }))
+    .sort((left, right) => right.revenueCents - left.revenueCents)
+    .slice(0, 5);
+
+  const statusCounts = orders.reduce<Map<AdminOrderRow["status"], number>>((accumulator, order) => {
+    const current = accumulator.get(order.status) ?? 0;
+    accumulator.set(order.status, current + 1);
+    return accumulator;
+  }, new Map());
+  const orderStatus: OrderStatusPoint[] = Array.from(statusCounts.entries()).map(([status, count]) => ({
+    status,
+    count,
+  }));
+
+  return {
+    salesTrend,
+    topProducts,
+    orderStatus,
   };
 }

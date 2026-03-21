@@ -19,23 +19,64 @@ function parseOptionalBoolean(value: unknown) {
   return ["1", "true", "yes", "on"].includes(value.trim().toLowerCase());
 }
 
+function parseOptionalString(value: unknown) {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  if (trimmed.length === 0) {
+    return undefined;
+  }
+  return trimmed;
+}
+
+function isValidResendFromEmail(value: string) {
+  if (z.string().email().safeParse(value).success) {
+    return true;
+  }
+
+  const match = value.match(/<([^<>]+)>$/);
+  if (!match) {
+    return false;
+  }
+
+  const extractedEmail = match[1];
+  if (!extractedEmail) {
+    return false;
+  }
+
+  return z.string().email().safeParse(extractedEmail.trim()).success;
+}
+
 const runtimeEnvSchema = z.object({
-  AUTH_SECRET: z.string().min(16).optional(),
-  AUTH_REFRESH_TOKEN_SECRET: z.string().min(16).optional(),
-  APP_BASE_URL: z.string().url().optional(),
-  ADMIN_BASE_URL: z.string().url().optional(),
+  AUTH_SECRET: z.preprocess(parseOptionalString, z.string().min(16).optional()),
+  AUTH_REFRESH_TOKEN_SECRET: z.preprocess(parseOptionalString, z.string().min(16).optional()),
+  APP_BASE_URL: z.preprocess(parseOptionalString, z.string().url().optional()),
+  ADMIN_BASE_URL: z.preprocess(parseOptionalString, z.string().url().optional()),
   AUTH_ACCESS_TTL_SECONDS: z.preprocess(parseOptionalPositiveInt, z.number().int().positive().optional()),
   AUTH_REFRESH_IDLE_DAYS: z.preprocess(parseOptionalPositiveInt, z.number().int().positive().optional()),
   AUTH_REFRESH_ABSOLUTE_DAYS: z.preprocess(parseOptionalPositiveInt, z.number().int().positive().optional()),
   AUTH_ADMIN_REFRESH_IDLE_HOURS: z.preprocess(parseOptionalPositiveInt, z.number().int().positive().optional()),
   AUTH_ADMIN_REFRESH_ABSOLUTE_DAYS: z.preprocess(parseOptionalPositiveInt, z.number().int().positive().optional()),
   ADMIN_REQUIRE_CF_ACCESS: z.preprocess(parseOptionalBoolean, z.boolean().optional()),
-  RESEND_API_KEY: z.string().min(1).optional(),
-  RESEND_FROM_EMAIL: z.string().email().optional(),
-  GOOGLE_CLIENT_ID: z.string().min(1).optional(),
-  GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
-  FACEBOOK_CLIENT_ID: z.string().min(1).optional(),
-  FACEBOOK_CLIENT_SECRET: z.string().min(1).optional(),
+  RESEND_API_KEY: z.preprocess(parseOptionalString, z.string().min(1).optional()),
+  RESEND_FROM_EMAIL: z.preprocess(
+    parseOptionalString,
+    z.string().refine(isValidResendFromEmail, "Invalid email address").optional(),
+  ),
+  GOOGLE_CLIENT_ID: z.preprocess(parseOptionalString, z.string().min(1).optional()),
+  GOOGLE_CLIENT_SECRET: z.preprocess(parseOptionalString, z.string().min(1).optional()),
+  FACEBOOK_CLIENT_ID: z.preprocess(parseOptionalString, z.string().min(1).optional()),
+  FACEBOOK_CLIENT_SECRET: z.preprocess(parseOptionalString, z.string().min(1).optional()),
+  STRIPE_SECRET_KEY: z.preprocess(parseOptionalString, z.string().min(1).optional()),
+  STRIPE_WEBHOOK_SECRET: z.preprocess(parseOptionalString, z.string().min(1).optional()),
+  MERCADOPAGO_ACCESS_TOKEN: z.preprocess(parseOptionalString, z.string().min(1).optional()),
+  MERCADOPAGO_WEBHOOK_SECRET: z.preprocess(parseOptionalString, z.string().min(1).optional()),
+  PAYPAL_CLIENT_ID: z.preprocess(parseOptionalString, z.string().min(1).optional()),
+  PAYPAL_CLIENT_SECRET: z.preprocess(parseOptionalString, z.string().min(1).optional()),
+  PAYPAL_WEBHOOK_ID: z.preprocess(parseOptionalString, z.string().min(1).optional()),
+  MOCK_PAYMENT_WEBHOOK_SECRET: z.preprocess(parseOptionalString, z.string().min(1).optional()),
+  INVENTORY_SWEEPER_TOKEN: z.preprocess(parseOptionalString, z.string().min(1).optional()),
 });
 
 export type RuntimeEnv = z.infer<typeof runtimeEnvSchema>;
@@ -92,6 +133,36 @@ export function getOAuthProviderFlags() {
   return {
     googleEnabled: Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET),
     facebookEnabled: Boolean(env.FACEBOOK_CLIENT_ID && env.FACEBOOK_CLIENT_SECRET),
+  };
+}
+
+export function getPaymentProviderFlags() {
+  const env = getRuntimeEnvironment();
+  return {
+    stripeEnabled: Boolean(env.STRIPE_SECRET_KEY),
+    mercadoPagoEnabled: Boolean(env.MERCADOPAGO_ACCESS_TOKEN),
+    paypalEnabled: Boolean(env.PAYPAL_CLIENT_ID && env.PAYPAL_CLIENT_SECRET),
+  };
+}
+
+export function getPaymentRuntimeConfig() {
+  const env = getRuntimeEnvironment();
+  return {
+    stripeSecretKey: env.STRIPE_SECRET_KEY,
+    stripeWebhookSecret: env.STRIPE_WEBHOOK_SECRET,
+    mercadoPagoAccessToken: env.MERCADOPAGO_ACCESS_TOKEN,
+    mercadoPagoWebhookSecret: env.MERCADOPAGO_WEBHOOK_SECRET,
+    paypalClientId: env.PAYPAL_CLIENT_ID,
+    paypalClientSecret: env.PAYPAL_CLIENT_SECRET,
+    paypalWebhookId: env.PAYPAL_WEBHOOK_ID,
+    mockWebhookSecret: env.MOCK_PAYMENT_WEBHOOK_SECRET,
+  };
+}
+
+export function getInventoryRuntimeConfig() {
+  const env = getRuntimeEnvironment();
+  return {
+    sweeperToken: env.INVENTORY_SWEEPER_TOKEN,
   };
 }
 
