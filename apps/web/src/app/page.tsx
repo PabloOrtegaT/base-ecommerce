@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Button } from "@base-ecommerce/ui";
+import { ArrowRight, Tag } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { HomeAuthActions } from "@/components/auth/home-auth-actions";
 import { JsonLdScript } from "@/components/seo/json-ld-script";
-import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { ProductCard } from "@/components/storefront/product-card";
 import { getHomeContent, listCatalogProducts } from "@/server/data/storefront-service";
 import { createPageMetadata } from "@/server/seo/metadata";
@@ -23,46 +24,97 @@ export default async function HomePage() {
   const catalogProducts = listCatalogProducts();
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl items-start px-6 py-10">
-      <div className="w-full space-y-8">
-        <section className="space-y-3 rounded-lg border bg-card p-6 text-card-foreground">
-          <h1 className="text-3xl font-semibold tracking-tight">Storefront Home</h1>
-          <p className="max-w-2xl text-sm text-muted-foreground">
-            This home page is server-rendered and driven by admin-managed data models (news, promo
-            banners, and featured sales).
+    <div className="space-y-16">
+      {/* ── Hero ──────────────────────────────────────────── */}
+      <section className="relative overflow-hidden rounded-lg border bg-gradient-to-br from-secondary/80 via-secondary/30 to-background py-16 px-8 lg:px-16 lg:py-24">
+        {/* Amber accent rule */}
+        <div
+          className="mb-7 h-px w-16 bg-primary animate-fade-in-up"
+          style={{ animationDelay: "0ms" }}
+        />
+
+        <div className="max-w-2xl">
+          <h1
+            className="text-5xl font-bold leading-[1.08] tracking-tight sm:text-6xl lg:text-7xl animate-fade-in-up"
+            style={{ animationDelay: "80ms" }}
+          >
+            Quality
+            <br />
+            products,
+            <br />
+            <span className="font-normal italic text-primary">delivered fast.</span>
+          </h1>
+
+          <p
+            className="mt-6 max-w-sm text-base text-muted-foreground leading-relaxed animate-fade-in-up"
+            style={{ animationDelay: "160ms" }}
+          >
+            Browse our curated catalog and find exactly what you need.
+            Fast shipping, easy returns.
           </p>
-          <div className="flex flex-wrap items-center gap-3">
-            <Button asChild>
-              <Link href="/catalog">Explore catalog</Link>
+
+          <div
+            className="mt-8 flex flex-wrap items-center gap-3 animate-fade-in-up"
+            style={{ animationDelay: "240ms" }}
+          >
+            <Button asChild size="lg">
+              <Link href="/catalog">
+                Explore catalog <ArrowRight className="h-4 w-4" />
+              </Link>
             </Button>
             <HomeAuthActions />
-            <ThemeToggle />
           </div>
-        </section>
+        </div>
 
-        {home.activeBanner && (
-          <section className="rounded-lg border border-primary/30 bg-primary/10 p-6 text-card-foreground">
-            <p className="text-sm font-medium text-primary">Sales Banner</p>
-            <h2 className="mt-1 text-2xl font-semibold">{home.activeBanner.title}</h2>
+        {/* Decorative large italic numeral — hidden on small screens */}
+        <span
+          aria-hidden
+          className="absolute right-10 bottom-4 hidden select-none font-display text-[10rem] font-bold italic leading-none text-primary/8 lg:block"
+        >
+          ✦
+        </span>
+      </section>
+
+      {/* ── Active sale banner ─────────────────────────────── */}
+      {home.activeBanner && (
+        <section className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-primary/30 bg-primary/6 px-6 py-5">
+          <div>
+            <Badge variant="default" className="mb-2">
+              <Tag className="mr-1 h-3 w-3" /> Sale
+            </Badge>
+            <h2 className="text-xl font-semibold">{home.activeBanner.title}</h2>
             {home.activeBanner.subtitle && (
               <p className="mt-1 text-sm text-muted-foreground">{home.activeBanner.subtitle}</p>
             )}
-            {home.activeBanner.ctaHref && home.activeBanner.ctaLabel && (
-              <Button asChild className="mt-4">
-                <Link href={home.activeBanner.ctaHref}>{home.activeBanner.ctaLabel}</Link>
-              </Button>
-            )}
-          </section>
-        )}
-
-        <section className="space-y-4">
-          <div className="flex items-end justify-between">
-            <h2 className="text-2xl font-semibold tracking-tight">Featured Sales</h2>
-            <Link href="/catalog" className="text-sm text-muted-foreground hover:underline">
-              View all products
-            </Link>
           </div>
-          <div className="grid gap-4 md:grid-cols-2">
+          {home.activeBanner.ctaHref && home.activeBanner.ctaLabel && (
+            <Button asChild>
+              <Link href={home.activeBanner.ctaHref}>
+                {home.activeBanner.ctaLabel} <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
+          )}
+        </section>
+      )}
+
+      {/* ── Featured products ──────────────────────────────── */}
+      {home.featuredProducts.length > 0 && (
+        <section className="space-y-6">
+          <div className="flex items-end justify-between gap-4 border-b pb-4">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-widest text-primary mb-1">
+                Handpicked
+              </p>
+              <h2 className="text-3xl font-bold tracking-tight">Featured products</h2>
+            </div>
+            <Button variant="ghost" asChild className="shrink-0">
+              <Link href="/catalog">
+                View all <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {home.featuredProducts.map((featured) => {
               const cardData = catalogProducts.find((entry) => entry.product.id === featured.id);
               if (!cardData || !cardData.category) {
@@ -84,30 +136,43 @@ export default async function HomePage() {
             })}
           </div>
         </section>
+      )}
 
-        <section className="space-y-3">
-          <h2 className="text-2xl font-semibold tracking-tight">News</h2>
-          <div className="grid gap-3">
+      {/* ── Latest news ────────────────────────────────────── */}
+      {home.news.length > 0 && (
+        <section className="space-y-6">
+          <div className="border-b pb-4">
+            <p className="text-xs font-medium uppercase tracking-widest text-primary mb-1">
+              Updates
+            </p>
+            <h2 className="text-3xl font-bold tracking-tight">Latest news</h2>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
             {home.news.map((news) => (
-              <article id={`news-${news.id}`} key={news.id} className="rounded-lg border bg-card p-4 text-card-foreground">
-                <h3 className="font-medium">{news.title}</h3>
-                <p className="mt-1 text-sm text-muted-foreground">{news.summary}</p>
+              <article
+                key={news.id}
+                id={`news-${news.id}`}
+                className="rounded-lg border bg-card p-6 transition-shadow hover:shadow-sm"
+              >
+                <h3 className="font-semibold leading-snug mb-2">{news.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{news.summary}</p>
               </article>
             ))}
           </div>
         </section>
+      )}
 
-        {home.news.map((news) => (
-          <JsonLdScript
-            key={`article-jsonld-${news.id}`}
-            value={buildArticleJsonLd({
-              headline: news.title,
-              description: news.summary,
-              pathname: `/#news-${news.id}`,
-            })}
-          />
-        ))}
-      </div>
-    </main>
+      {home.news.map((news) => (
+        <JsonLdScript
+          key={`article-jsonld-${news.id}`}
+          value={buildArticleJsonLd({
+            headline: news.title,
+            description: news.summary,
+            pathname: `/#news-${news.id}`,
+          })}
+        />
+      ))}
+    </div>
   );
 }

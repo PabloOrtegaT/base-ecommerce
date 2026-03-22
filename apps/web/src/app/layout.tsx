@@ -1,14 +1,22 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Playfair_Display, DM_Sans, Geist_Mono } from "next/font/google";
 import { FlashToastHost } from "@/components/feedback/flash-toast-host";
 import { themeInitializationScript } from "@/features/theme/theme-script";
 import { popFlashToast } from "@/server/feedback/flash-toast";
 import { getSiteBaseUrl } from "@/server/seo/metadata";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const playfairDisplay = Playfair_Display({
+  variable: "--font-playfair",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  style: ["normal", "italic"],
+});
+
+const dmSans = DM_Sans({
+  variable: "--font-dm-sans",
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600"],
 });
 
 const geistMono = Geist_Mono({
@@ -46,7 +54,7 @@ export default async function RootLayout({
         <meta name="color-scheme" content="light dark" />
         <script dangerouslySetInnerHTML={{ __html: themeInitializationScript }} />
       </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body className={`${playfairDisplay.variable} ${dmSans.variable} ${geistMono.variable} antialiased`}>
         <FlashToastHost initialToast={flashToast} />
         {children}
       </body>

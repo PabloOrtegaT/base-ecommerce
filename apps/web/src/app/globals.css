@@ -1,31 +1,81 @@
 @import "tailwindcss";
 
+/* Make dark: classes respond to data-theme="dark" attribute */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* ─── Warm Amber Editorial Design System ─────────────────────────────────── */
+
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  /* Warm cream background, deep warm foreground */
+  --background: oklch(0.985 0.012 75);
+  --foreground: oklch(0.12 0.02 55);
+
+  /* Cards are pure white so they pop against the warm cream background */
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.22 0.04 260);
-  --primary-foreground: oklch(0.98 0 0);
-  --muted: oklch(0.97 0.004 286);
-  --muted-foreground: oklch(0.45 0.03 256);
-  --border: oklch(0.92 0.004 286);
-  --ring: oklch(0.62 0.08 260);
-  --radius: 0.625rem;
+  --card-foreground: oklch(0.12 0.02 55);
+
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.12 0.02 55);
+
+  /* Rich warm amber as primary accent */
+  --primary: oklch(0.62 0.175 68);
+  --primary-foreground: oklch(0.98 0.005 75);
+
+  /* Warm sand for secondary */
+  --secondary: oklch(0.93 0.022 70);
+  --secondary-foreground: oklch(0.20 0.015 60);
+
+  /* Muted warm tones */
+  --muted: oklch(0.93 0.015 70);
+  --muted-foreground: oklch(0.50 0.02 65);
+
+  --accent: oklch(0.93 0.022 70);
+  --accent-foreground: oklch(0.20 0.015 60);
+
+  --destructive: oklch(0.58 0.22 25);
+  --destructive-foreground: oklch(0.98 0 0);
+
+  /* Warm borders */
+  --border: oklch(0.86 0.015 70);
+  --input: oklch(0.86 0.015 70);
+  --ring: oklch(0.62 0.175 68);
+
+  /* Sharper, more editorial radius */
+  --radius: 0.25rem;
+
   color-scheme: light;
 }
 
 [data-theme="dark"] {
-  --background: oklch(0.17 0.01 258);
-  --foreground: oklch(0.96 0.01 260);
-  --card: oklch(0.23 0.01 258);
-  --card-foreground: oklch(0.96 0.01 260);
-  --primary: oklch(0.82 0.1 258);
-  --primary-foreground: oklch(0.2 0.01 258);
-  --muted: oklch(0.27 0.01 258);
-  --muted-foreground: oklch(0.78 0.02 256);
-  --border: oklch(0.34 0.01 258);
-  --ring: oklch(0.72 0.1 258);
+  --background: oklch(0.13 0.02 48);
+  --foreground: oklch(0.94 0.01 70);
+
+  --card: oklch(0.18 0.02 48);
+  --card-foreground: oklch(0.94 0.01 70);
+
+  --popover: oklch(0.18 0.02 48);
+  --popover-foreground: oklch(0.94 0.01 70);
+
+  /* Brighter amber for dark mode readability */
+  --primary: oklch(0.75 0.165 68);
+  --primary-foreground: oklch(0.10 0.01 55);
+
+  --secondary: oklch(0.22 0.02 50);
+  --secondary-foreground: oklch(0.94 0.01 70);
+
+  --muted: oklch(0.22 0.015 50);
+  --muted-foreground: oklch(0.62 0.025 65);
+
+  --accent: oklch(0.22 0.02 50);
+  --accent-foreground: oklch(0.94 0.01 70);
+
+  --destructive: oklch(0.68 0.22 25);
+  --destructive-foreground: oklch(0.98 0 0);
+
+  --border: oklch(0.26 0.02 48);
+  --input: oklch(0.26 0.02 48);
+  --ring: oklch(0.75 0.165 68);
+
   color-scheme: dark;
 }
 
@@ -34,16 +84,29 @@
   --color-foreground: var(--foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);
+  --color-input: var(--input);
   --color-ring: var(--ring);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --font-sans: var(--font-geist-sans);
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  /* Font families */
+  --font-sans: var(--font-dm-sans);
+  --font-display: var(--font-playfair);
   --font-mono: var(--font-geist-mono);
 }
 
@@ -55,5 +118,28 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), system-ui, sans-serif;
+  font-family: var(--font-dm-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Headings automatically use the editorial display font */
+h1, h2, h3, h4 {
+  font-family: var(--font-playfair), Georgia, serif;
+}
+
+/* ─── Entrance animations ─────────────────────────────────── */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@utility animate-fade-in-up {
+  animation: fade-in-up 0.55s ease-out both;
 }

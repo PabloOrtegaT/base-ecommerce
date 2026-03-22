@@ -9,26 +9,35 @@ export default async function StorefrontLayout({
 }>) {
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto w-full max-w-6xl px-6 py-6">
-        <header className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-card px-4 py-3 text-card-foreground">
-          <Link href="/" className="font-semibold">
-            Base Ecommerce
+      {/* Sticky header */}
+      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
+          {/* Wordmark — Playfair Display italic, amber accent on second word */}
+          <Link href="/" className="flex items-center gap-px leading-none select-none">
+            <span className="font-display text-xl font-bold tracking-tight">Base</span>
+            <span className="font-display text-xl font-normal italic text-primary tracking-tight">Commerce</span>
           </Link>
-          <div className="flex items-center gap-3">
-            <nav className="flex items-center gap-4 text-sm text-muted-foreground">
-              <Link href="/catalog" className="hover:underline">
-                Catalog
-              </Link>
-              <Link href="/cart" className="hover:underline">
-                Cart
-              </Link>
-              <StorefrontAuthLinks />
-            </nav>
+
+          <nav className="hidden md:flex items-center gap-8 text-sm">
+            <Link
+              href="/catalog"
+              className="relative text-muted-foreground transition-colors hover:text-foreground after:absolute after:-bottom-px after:left-0 after:h-px after:w-0 after:bg-primary after:transition-all hover:after:w-full"
+            >
+              Catalog
+            </Link>
+          </nav>
+
+          <div className="flex items-center gap-1">
+            <StorefrontAuthLinks />
             <ThemeToggle />
           </div>
-        </header>
+        </div>
+      </header>
+
+      {/* Page content */}
+      <main className="mx-auto w-full max-w-6xl px-6 py-10">
         {children}
-      </div>
+      </main>
     </div>
   );
 }
