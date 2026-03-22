@@ -23,11 +23,14 @@ const PALETTES: PaletteOption[] = [
 
 export function PalettePicker() {
   const [open, setOpen] = useState(false);
-  const [active, setActive] = useState(() => {
-    if (typeof window === "undefined") return "amber";
-    return localStorage.getItem(PALETTE_STORAGE_KEY) ?? "amber";
-  });
+  // "amber" matches the server render; localStorage is synced after hydration in the effect below
+  const [active, setActive] = useState("amber");
   const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reading localStorage after hydration is intentional; server always renders "amber" to avoid mismatch
+    setActive(localStorage.getItem(PALETTE_STORAGE_KEY) ?? "amber");
+  }, []);
 
   useEffect(() => {
     if (!open) return;
