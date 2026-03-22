@@ -52,7 +52,7 @@ export default async function HomePage() {
             </p>
             <Button asChild>
               <Link href={home.activeBanner?.ctaHref ?? "/catalog"}>
-                {home.activeBanner ? "Shop the sale" : "Explore catalog"}
+                {home.activeBanner ? (home.activeBanner.ctaLabel ?? "Shop the sale") : "Explore catalog"}
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
@@ -143,16 +143,17 @@ export default async function HomePage() {
         </section>
       )}
 
-      {home.news.map((news) => (
-        <JsonLdScript
-          key={`article-jsonld-${news.id}`}
-          value={buildArticleJsonLd({
-            headline: news.title,
-            description: news.summary,
-            pathname: `/#news-${news.id}`,
-          })}
-        />
-      ))}
+      {home.news.length > 0 &&
+        home.news.map((news) => (
+          <JsonLdScript
+            key={`article-jsonld-${news.id}`}
+            value={buildArticleJsonLd({
+              headline: news.title,
+              description: news.summary,
+              pathname: `/#news-${news.id}`,
+            })}
+          />
+        ))}
     </div>
   );
 }
