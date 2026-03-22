@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button } from "@base-ecommerce/ui";
+import { Moon, Sun } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   applyThemeToDocument,
   DEFAULT_THEME,
@@ -22,7 +23,6 @@ export function ThemeToggle() {
     if (typeof window === "undefined") {
       return DEFAULT_THEME;
     }
-
     return getBrowserThemePreference();
   });
 
@@ -40,12 +40,12 @@ export function ThemeToggle() {
   return (
     <Button
       type="button"
-      variant="outline"
-      size="sm"
+      variant="ghost"
+      size="icon"
       onClick={onToggle}
       aria-label="Toggle day and night theme"
     >
-      Theme
+      {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
     </Button>
   );
 }

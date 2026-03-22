@@ -1,7 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@base-ecommerce/ui";
+import { CheckCircle2, XCircle, Ban, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 
 type MockCheckoutClientProps = {
   orderId: string;
@@ -10,14 +15,16 @@ type MockCheckoutClientProps = {
 };
 
 function resolveMockProviderId(provider: MockCheckoutClientProps["provider"]) {
-  if (provider === "mercadopago") {
-    return "mock-mercadopago";
-  }
-  if (provider === "paypal") {
-    return "mock-paypal";
-  }
+  if (provider === "mercadopago") return "mock-mercadopago";
+  if (provider === "paypal") return "mock-paypal";
   return "mock-card";
 }
+
+const providerLabels: Record<string, string> = {
+  card: "Mock Card",
+  mercadopago: "Mock Mercado Pago",
+  paypal: "Mock PayPal",
+};
 
 export function MockCheckoutClient({ orderId, provider, providerSessionId }: MockCheckoutClientProps) {
   const [pending, setPending] = useState(false);
@@ -29,9 +36,7 @@ export function MockCheckoutClient({ orderId, provider, providerSessionId }: Moc
     try {
       const response = await fetch("/api/payments/mock/complete", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           orderId,
           providerSessionId,
@@ -58,25 +63,57 @@ export function MockCheckoutClient({ orderId, provider, providerSessionId }: Moc
   };
 
   return (
-    <section className="space-y-3 rounded-lg border bg-card p-6 text-card-foreground">
-      <p className="text-sm text-muted-foreground">
-        Mock checkout session: <span className="font-mono">{providerSessionId}</span>
-      </p>
-      <p className="text-sm text-muted-foreground">
-        Provider mode is mock. Use these controls to simulate provider webhook outcomes.
-      </p>
-      <div className="flex flex-wrap gap-2">
-        <Button disabled={pending} onClick={() => runOutcome("succeeded")}>
-          Simulate payment success
-        </Button>
-        <Button variant="outline" disabled={pending} onClick={() => runOutcome("failed")}>
-          Simulate payment failure
-        </Button>
-        <Button variant="ghost" disabled={pending} onClick={() => runOutcome("cancelled")}>
-          Simulate cancellation
-        </Button>
-      </div>
-      {error && <p className="text-sm text-red-600">{error}</p>}
-    </section>
+    <Card className="max-w-md">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base">Mock Payment Simulator</CardTitle>
+          <Badge variant="warning">Dev only</Badge>
+        </div>
+        <div className="space-y-1 text-xs text-muted-foreground pt-1">
+          <p>Provider: <span className="font-medium">{providerLabels[provider]}</span></p>
+          <p className="font-mono">{providerSessionId}</p>
+        </div>
+      </CardHeader>
+      <Separator />
+      <CardContent className="pt-4 space-y-3">
+        <p className="text-sm text-muted-foreground">
+          Simulate a provider webhook response to test the order flow.
+        </p>
+        <div className="grid gap-2">
+          <Button
+            className="w-full"
+            disabled={pending}
+            onClick={() => runOutcome("succeeded")}
+          >
+            <CheckCircle2 className="h-4 w-4" />
+            Simulate payment success
+          </Button>
+          <Button
+            variant="outline"
+            className="w-full"
+            disabled={pending}
+            onClick={() => runOutcome("failed")}
+          >
+            <XCircle className="h-4 w-4" />
+            Simulate payment failure
+          </Button>
+          <Button
+            variant="ghost"
+            className="w-full"
+            disabled={pending}
+            onClick={() => runOutcome("cancelled")}
+          >
+            <Ban className="h-4 w-4" />
+            Simulate cancellation
+          </Button>
+        </div>
+        {error && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+      </CardContent>
+    </Card>
   );
 }

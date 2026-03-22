@@ -3,7 +3,14 @@
     "allow": [
       "Bash(find C:/Users/Public/Desktop/prog/base-ecommerce/apps/web/src/app/api -name *cart* -type f)",
       "Bash(npx tsc:*)",
-      "Bash(npx vitest:*)"
+      "Bash(npx vitest:*)",
+      "Bash(find /c/Users/Public/Desktop/prog/base-ecommerce/apps/web/src/app/'\\(storefront\\)'/checkout -type f)",
+      "Bash(find /c/Users/Public/Desktop/prog/base-ecommerce/apps/web/src -path *payment* -o -path *provider*)",
+      "Bash(find /c/Users/Public/Desktop/prog/base-ecommerce/apps/web/src/__tests__ -name *payment* -o -name *checkout*)",
+      "Bash(find /c/Users/Public/Desktop/prog/base-ecommerce/apps/web/src/__tests__/api -type f -name *.test.ts)",
+      "Bash(find /c/Users/Public/Desktop/prog/base-ecommerce/docs -type f -name *payment* -o -name *checkout* -o -name *order*)",
+      "Bash(find /c/Users/Public/Desktop/prog/base-ecommerce/apps/web/src/app -path */checkout* -o -path */payments*)",
+      "Bash(npm install:*)"
     ]
   }
 }

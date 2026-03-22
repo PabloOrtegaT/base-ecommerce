@@ -2,7 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useSyncExternalStore } from "react";
-import { Button } from "@base-ecommerce/ui";
+import { ShoppingBag, Minus, Plus, Trash2, AlertTriangle, CheckCircle2, ArrowRight } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { calculateCartTotals, getUnavailableCartItems } from "@/features/cart/cart";
 import { useCartStore } from "@/features/cart/cart-store";
 import { formatCurrencyFromCents } from "@/features/catalog/pricing";
@@ -29,162 +34,216 @@ export function CartView({ authenticated }: CartViewProps) {
   const setAuthState = useCartStore((state) => state.setAuthState);
 
   useEffect(() => {
-    if (!hydrated) {
-      return;
-    }
+    if (!hydrated) return;
     setAuthState(authenticated);
   }, [authenticated, hydrated, setAuthState]);
 
   useEffect(() => {
-    if (!hydrated) {
-      return;
-    }
-    if (!authenticated) {
-      return;
-    }
+    if (!hydrated || !authenticated) return;
 
     let active = true;
     const loadServerCart = async () => {
       const payload = await runSingleFlight<{ cart: typeof cart; version: number } | null>(
         "cart-snapshot",
         async () => {
-          const response = await fetch("/api/cart", {
-            method: "GET",
-            cache: "no-store",
-          });
-          if (!response.ok) {
-            return null;
-          }
+          const response = await fetch("/api/cart", { method: "GET", cache: "no-store" });
+          if (!response.ok) return null;
           return (await response.json()) as { cart: typeof cart; version: number };
         },
       );
-
-      if (!active || !payload) {
-        return;
-      }
+      if (!active || !payload) return;
       hydrateCart(payload.cart, { version: payload.version });
     };
 
     void loadServerCart();
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, [authenticated, hydrateCart, hydrated]);
 
   const totals = useMemo(() => calculateCartTotals(cart), [cart]);
   const unavailableItems = useMemo(() => getUnavailableCartItems(cart), [cart]);
+  const currency = cart.items[0]?.currency ?? "MXN";
+  const canCheckout = unavailableItems.length === 0 && totals.itemCount > 0;
 
   if (!hydrated) {
     return (
-      <main className="mx-auto w-full max-w-4xl space-y-4 px-6 py-10">
-        <h1 className="text-3xl font-semibold tracking-tight">Your cart</h1>
-        <p className="text-sm text-muted-foreground">Loading cart...</p>
-      </main>
+      <div className="space-y-4">
+        <h1 className="text-3xl font-bold tracking-tight">Your cart</h1>
+        <div className="animate-pulse space-y-3">
+          {[1, 2].map((i) => (
+            <div key={i} className="h-24 rounded-xl bg-muted" />
+          ))}
+        </div>
+      </div>
     );
   }
 
   if (cart.items.length === 0) {
     return (
-      <main className="mx-auto w-full max-w-4xl space-y-4 px-6 py-10">
-        <h1 className="text-3xl font-semibold tracking-tight">Your cart</h1>
-        <p className="text-sm text-muted-foreground">Your cart is empty.</p>
+      <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
+        <div className="rounded-full bg-muted p-6">
+          <ShoppingBag className="h-10 w-10 text-muted-foreground" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold">Your cart is empty</h1>
+          <p className="mt-1 text-muted-foreground">Add some products to get started</p>
+        </div>
         <Button asChild>
-          <Link href="/catalog">Explore products</Link>
+          <Link href="/catalog">
+            Explore products <ArrowRight className="h-4 w-4" />
+          </Link>
         </Button>
-      </main>
+      </div>
     );
   }
 
-  const currency = cart.items[0]?.currency ?? "MXN";
-  const canCheckout = unavailableItems.length === 0 && totals.itemCount > 0;
-
   return (
-    <main className="mx-auto w-full max-w-4xl space-y-5 px-6 py-10">
-      <h1 className="text-3xl font-semibold tracking-tight">Your cart</h1>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold tracking-tight">Your cart</h1>
+        <Badge variant="secondary">{totals.itemCount} {totals.itemCount === 1 ? "item" : "items"}</Badge>
+      </div>
 
+      {/* Alerts */}
       {syncError && (
-        <section className="rounded-lg border border-red-500/40 bg-red-500/10 p-4 text-sm text-card-foreground">
-          {syncError}
-        </section>
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>{syncError}</AlertDescription>
+        </Alert>
       )}
 
       {mergeSummary.messages.length > 0 && (
-        <section className="space-y-2 rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-4 text-sm text-card-foreground">
-          <p className="font-medium">Cart merge summary</p>
-          <ul className="list-disc space-y-1 pl-5">
-            {mergeSummary.messages.map((message) => (
-              <li key={message}>{message}</li>
-            ))}
-          </ul>
-          <Button variant="outline" onClick={clearMergeSummary}>
-            Dismiss
-          </Button>
-        </section>
+        <Alert variant="success">
+          <CheckCircle2 className="h-4 w-4" />
+          <AlertTitle>Cart merge summary</AlertTitle>
+          <AlertDescription>
+            <ul className="mt-1 list-disc pl-4 space-y-0.5">
+              {mergeSummary.messages.map((message) => (
+                <li key={message}>{message}</li>
+              ))}
+            </ul>
+            <Button variant="link" size="sm" className="mt-2 h-auto p-0" onClick={clearMergeSummary}>
+              Dismiss
+            </Button>
+          </AlertDescription>
+        </Alert>
       )}
 
       {unavailableItems.length > 0 && (
-        <section className="space-y-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-card-foreground">
-          <p className="font-medium">Some items require attention before checkout:</p>
-          <ul className="list-disc space-y-1 pl-5">
-            {unavailableItems.map((item) => (
-              <li key={item.variantId}>
-                {item.name} ({item.variantName}): {item.unavailableReason}
-              </li>
-            ))}
-          </ul>
-        </section>
+        <Alert variant="warning">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Some items need attention</AlertTitle>
+          <AlertDescription>
+            <ul className="mt-1 list-disc pl-4 space-y-0.5">
+              {unavailableItems.map((item) => (
+                <li key={item.variantId}>
+                  <span className="font-medium">{item.name}</span> ({item.variantName}): {item.unavailableReason}
+                </li>
+              ))}
+            </ul>
+          </AlertDescription>
+        </Alert>
       )}
 
-      <section className="space-y-3">
-        {cart.items.map((item) => (
-          <article key={item.variantId} className="rounded-lg border bg-card p-4 text-card-foreground">
-            <div className="flex items-start justify-between gap-4">
-              <div className="space-y-1">
-                <Link href={item.href} className="font-medium hover:underline">
-                  {item.name}
-                </Link>
-                <p className="text-sm text-muted-foreground">{item.variantName}</p>
-                <p className="text-sm text-muted-foreground">{formatCurrencyFromCents(item.unitPriceCents, item.currency)}</p>
-                {item.unavailableReason && <p className="text-sm text-amber-700">{item.unavailableReason}</p>}
+      <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+        {/* Cart items */}
+        <div className="space-y-3">
+          {cart.items.map((item) => (
+            <Card key={item.variantId}>
+              <CardContent className="p-4">
+                <div className="flex items-start gap-4">
+                  {/* Item image placeholder */}
+                  <div className="h-16 w-16 shrink-0 rounded-lg bg-muted flex items-center justify-center">
+                    <ShoppingBag className="h-6 w-6 text-muted-foreground/40" />
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <Link href={item.href} className="font-semibold hover:underline line-clamp-1">
+                      {item.name}
+                    </Link>
+                    <p className="text-sm text-muted-foreground">{item.variantName}</p>
+                    <p className="text-sm font-medium mt-0.5">
+                      {formatCurrencyFromCents(item.unitPriceCents, item.currency)}
+                    </p>
+                    {item.unavailableReason && (
+                      <Badge variant="warning" className="mt-1 text-xs">
+                        {item.unavailableReason}
+                      </Badge>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col items-end gap-2">
+                    <div className="flex items-center gap-1 rounded-lg border bg-background">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 rounded-r-none"
+                        onClick={() => updateQuantity(item.variantId, item.quantity - 1)}
+                        disabled={item.quantity <= 1}
+                        aria-label={`Decrease ${item.name} quantity`}
+                      >
+                        <Minus className="h-3 w-3" />
+                      </Button>
+                      <span
+                        className="w-8 text-center text-sm font-medium tabular-nums"
+                        data-testid={`cart-qty-${item.variantId}`}
+                      >
+                        {item.quantity}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 rounded-l-none"
+                        onClick={() => updateQuantity(item.variantId, item.quantity + 1)}
+                        disabled={item.quantity >= item.stockOnHand || item.stockOnHand <= 0}
+                        aria-label={`Increase ${item.name} quantity`}
+                      >
+                        <Plus className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-muted-foreground hover:text-destructive"
+                      onClick={() => removeItem(item.variantId)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Order summary */}
+        <div className="space-y-4">
+          <Card>
+            <CardContent className="p-5 space-y-4">
+              <h2 className="font-semibold">Order summary</h2>
+              <Separator />
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Items ({totals.itemCount})</span>
+                  <span>{formatCurrencyFromCents(totals.subtotalCents, currency)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Shipping</span>
+                  <span className="text-muted-foreground">Calculated at checkout</span>
+                </div>
               </div>
-
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => updateQuantity(item.variantId, item.quantity - 1)}
-                  disabled={item.quantity <= 1}
-                  aria-label={`Decrease ${item.name} quantity`}
-                >
-                  -
-                </Button>
-                <p className="w-12 text-center text-sm font-medium" data-testid={`cart-qty-${item.variantId}`}>
-                  {item.quantity}
-                </p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => updateQuantity(item.variantId, item.quantity + 1)}
-                  disabled={item.quantity >= item.stockOnHand || item.stockOnHand <= 0}
-                  aria-label={`Increase ${item.name} quantity`}
-                >
-                  +
-                </Button>
-                <Button variant="ghost" onClick={() => removeItem(item.variantId)}>
-                  Remove
-                </Button>
+              <Separator />
+              <div className="flex justify-between font-semibold">
+                <span>Subtotal</span>
+                <span>{formatCurrencyFromCents(totals.subtotalCents, currency)}</span>
               </div>
-            </div>
-          </article>
-        ))}
-      </section>
-
-      <section className="rounded-lg border bg-card p-4 text-card-foreground">
-        <p className="text-sm text-muted-foreground">Items available for checkout: {totals.itemCount}</p>
-        <p className="text-lg font-semibold">Subtotal: {formatCurrencyFromCents(totals.subtotalCents, currency)}</p>
-      </section>
-
-      <CheckoutSessionForm authenticated={authenticated} canCheckout={canCheckout} />
-    </main>
+              <CheckoutSessionForm authenticated={authenticated} canCheckout={canCheckout} />
+            </CardContent>
+          </Card>
+          <Button asChild variant="outline" className="w-full">
+            <Link href="/catalog">Continue shopping</Link>
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }

@@ -2,7 +2,12 @@
 
 import { FormEvent, useState, useTransition } from "react";
 import { signIn } from "next-auth/react";
-import { Button } from "@base-ecommerce/ui";
+import { AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 
 type LoginFormProps = {
   callbackUrl: string;
@@ -49,58 +54,81 @@ export function LoginForm({ callbackUrl, googleEnabled, facebookEnabled }: Login
     });
   };
 
+  const hasOAuth = googleEnabled || facebookEnabled;
+
   return (
     <div className="space-y-4">
-      <form onSubmit={onCredentialsSubmit} className="space-y-3 rounded-lg border bg-card p-6 text-card-foreground">
-        <div>
-          <label htmlFor="login-email" className="text-sm text-muted-foreground">
-            Email
-          </label>
-          <input
+      <form onSubmit={onCredentialsSubmit} className="space-y-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="login-email">Email</Label>
+          <Input
             id="login-email"
             name="email"
             type="email"
             required
-            className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm"
+            placeholder="jane@example.com"
+            autoComplete="email"
+            disabled={isPending}
           />
         </div>
-        <div>
-          <label htmlFor="login-password" className="text-sm text-muted-foreground">
-            Password
-          </label>
-          <input
+        <div className="space-y-1.5">
+          <Label htmlFor="login-password">Password</Label>
+          <Input
             id="login-password"
             name="password"
             type="password"
             required
-            className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm"
+            placeholder="Your password"
+            autoComplete="current-password"
+            disabled={isPending}
           />
         </div>
-        {errorMessage && <p className="text-sm text-red-700">{errorMessage}</p>}
-        <Button type="submit" disabled={isPending}>
+
+        {errorMessage && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{errorMessage}</AlertDescription>
+          </Alert>
+        )}
+
+        <Button type="submit" className="w-full" disabled={isPending}>
           {isPending ? "Signing in..." : "Sign in"}
         </Button>
       </form>
 
-      <section className="rounded-lg border bg-card p-6 text-card-foreground">
-        <p className="text-sm font-medium">Other sign-in methods</p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <Button type="button" variant="outline" disabled={!googleEnabled || isPending} onClick={() => onProviderLogin("google")}>
-            Continue with Google
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            disabled={!facebookEnabled || isPending}
-            onClick={() => onProviderLogin("facebook")}
-          >
-            Continue with Facebook
-          </Button>
-        </div>
-        <p className="mt-2 text-xs text-muted-foreground">
-          Providers are enabled only when credentials exist in environment variables.
-        </p>
-      </section>
+      {hasOAuth && (
+        <>
+          <div className="relative">
+            <Separator />
+            <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">
+              or continue with
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {googleEnabled && (
+              <Button
+                type="button"
+                variant="outline"
+                disabled={isPending}
+                onClick={() => onProviderLogin("google")}
+              >
+                Google
+              </Button>
+            )}
+            {facebookEnabled && (
+              <Button
+                type="button"
+                variant="outline"
+                disabled={isPending}
+                onClick={() => onProviderLogin("facebook")}
+                className={!googleEnabled ? "col-span-2" : ""}
+              >
+                Facebook
+              </Button>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }

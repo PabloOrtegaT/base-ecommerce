@@ -56,7 +56,7 @@ export default async function RootLayout({
       </head>
       <body className={`${playfairDisplay.variable} ${dmSans.variable} ${geistMono.variable} antialiased`}>
         <FlashToastHost initialToast={flashToast} />
-        {children}
+        <div className="mx-auto w-full max-w-5xl">{children}</div>
       </body>
     </html>
   );
