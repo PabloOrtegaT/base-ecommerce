@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { forbidden, redirect } from "next/navigation";
+import { ActiveNavLink } from "@/components/admin/active-nav-link";
 import {
   LayoutDashboard,
   Tag,
@@ -103,14 +104,12 @@ export default async function AdminLayout({
                 );
               }
               return (
-                <Link
+                <ActiveNavLink
                   key={item.href}
                   href={item.href}
-                  className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                >
-                  <span className="shrink-0">{item.icon}</span>
-                  <span>{item.label}</span>
-                </Link>
+                  icon={item.icon}
+                  label={item.label}
+                />
               );
             })}
           </nav>
