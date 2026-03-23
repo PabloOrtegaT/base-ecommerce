@@ -172,6 +172,8 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
                 className="h-9 w-52 rounded-md border border-input bg-background pl-8 pr-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               />
               {categorySlug && <input type="hidden" name="category" value={categorySlug} />}
+              {priceMin !== undefined && !Number.isNaN(priceMin) && <input type="hidden" name="priceMin" value={priceMin} />}
+              {priceMax !== undefined && !Number.isNaN(priceMax) && <input type="hidden" name="priceMax" value={priceMax} />}
             </div>
           </form>
         </div>
@@ -187,7 +189,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
       {/* Body: sidebar + grid */}
       <div className="flex gap-8">
         {/* Sidebar — desktop only */}
-        <aside className="hidden md:block w-52 shrink-0">
+        <aside className="hidden md:block w-52 shrink-0 bg-muted/30 border-r">
           <form method="GET" action="/catalog" className="sticky top-24 space-y-0">
             {filterForm}
           </form>
