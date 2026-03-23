@@ -2,12 +2,12 @@ import { expect, test, type Page } from "@playwright/test";
 
 async function addFirstInStockProduct(page: Page) {
   await page.goto("/catalog");
-  const productLinks = page.getByRole("link", { name: "View product" });
+  const productLinks = page.locator("a[href^='/catalog/']");
   const linkCount = await productLinks.count();
 
   for (let index = 0; index < linkCount; index += 1) {
     await productLinks.nth(index).click();
-    const addToCartButton = page.getByTestId("add-to-cart");
+    const addToCartButton = page.locator('button[data-testid="add-to-cart"]');
     await expect(addToCartButton).toBeVisible();
 
     const stockStatusText = ((await page.getByTestId("stock-status").textContent()) ?? "").toLowerCase();
@@ -32,12 +32,11 @@ test("browse -> product -> add to cart", async ({ page }) => {
   await page.goto("/catalog");
   await expect(page.getByRole("heading", { name: "Catalog" })).toBeVisible();
 
-  await page.getByRole("link", { name: "View product" }).first().click();
+  await addFirstInStockProduct(page);
   const productName = ((await page.getByRole("heading", { level: 1 }).textContent()) ?? "").trim();
   expect(productName.length).toBeGreaterThan(0);
 
-  await addFirstInStockProduct(page);
-  await page.getByRole("link", { name: "Go to cart" }).click();
+  await page.getByRole("link", { name: "View cart" }).click();
 
   await expect(page.getByRole("heading", { name: "Your cart" })).toBeVisible();
   await expect(page.getByText(productName)).toBeVisible();
@@ -45,12 +44,12 @@ test("browse -> product -> add to cart", async ({ page }) => {
 
 test("stock status controls add-to-cart availability", async ({ page }) => {
   await page.goto("/catalog");
-  await page.getByRole("link", { name: "View product" }).first().click();
+  await page.locator("a[href^='/catalog/']").first().click();
   const stockStatus = page.getByTestId("stock-status");
   await expect(stockStatus).toBeVisible();
 
   const statusText = (await stockStatus.textContent()) ?? "";
-  const addToCartButton = page.getByTestId("add-to-cart");
+  const addToCartButton = page.locator('button[data-testid="add-to-cart"]');
 
   if (statusText.toLowerCase().includes("out of stock")) {
     await expect(addToCartButton).toBeDisabled();
@@ -62,7 +61,7 @@ test("stock status controls add-to-cart availability", async ({ page }) => {
 
 test("cart quantity can be increased and decreased", async ({ page }) => {
   await addFirstInStockProduct(page);
-  await page.getByRole("link", { name: "Go to cart" }).click();
+  await page.getByRole("link", { name: "View cart" }).click();
 
   const quantityLabel = page.locator("[data-testid^='cart-qty-']").first();
   const initialQuantity = Number((await quantityLabel.textContent()) ?? "0");
