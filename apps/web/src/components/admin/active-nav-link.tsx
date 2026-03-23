@@ -21,7 +21,7 @@ export function ActiveNavLink({ href, icon, label }: ActiveNavLinkProps) {
         "flex items-center gap-3 rounded-l-none rounded-r-md px-3 py-2 text-sm transition-colors border-r-2",
         isActive
           ? "border-primary bg-primary/10 text-primary font-semibold"
-          : "border-transparent text-muted-foreground hover:bg-muted hover:text-foreground",
+          : "border-transparent text-nav-foreground/70 hover:bg-nav-foreground/10 hover:text-nav-foreground",
       )}
     >
       <span className="shrink-0">{icon}</span>

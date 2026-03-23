@@ -14,7 +14,18 @@
       "Bash(cat \"C:/Users/Public/Desktop/prog/base-ecommerce/apps/web/src/app/\\(storefront\\)/catalog/page.tsx\")",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(ls \"C:/Users/Public/Desktop/prog/base-ecommerce/apps/web/src/app/\\(storefront\\)/\")"
+      "Bash(ls \"C:/Users/Public/Desktop/prog/base-ecommerce/apps/web/src/app/\\(storefront\\)/\")",
+      "Bash(bash \"C:/Users/peot_/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.5/skills/brainstorming/scripts/start-server.sh\" --project-dir \"c:/Users/Public/Desktop/prog/base-ecommerce\")",
+      "Bash(node -e \"const { execSync } = require\\(''child_process''\\); try { const out = execSync\\(''npx tailwindcss --help 2>&1'', { cwd: ''C:/Users/Public/Desktop/prog/base-ecommerce/apps/web'', timeout: 10000 }\\); console.log\\(out.toString\\(\\).substring\\(0, 200\\)\\); } catch\\(e\\) { console.log\\(e.stdout?.toString\\(\\)?.substring\\(0, 200\\) || e.message\\); }\")",
+      "Bash(find /c/Users/Public/Desktop/prog/base-ecommerce -path *admin* -name *.test.* -o -path *admin* -name *.spec.*)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://storefront.lvh.me:3000/)",
+      "Bash(PLAYWRIGHT_REUSE_EXISTING_SERVER=1 npx playwright test e2e/storefront-layout.spec.ts --reporter=list)",
+      "Bash(PLAYWRIGHT_REUSE_EXISTING_SERVER=1 npx playwright test e2e/storefront-layout.spec.ts --reporter=list --max-failures=0)",
+      "Bash(curl -s \"http://storefront.lvh.me:3000/\")",
+      "Bash(curl -v \"http://storefront.lvh.me:3000/\")",
+      "Bash(curl -s \"http://storefront.lvh.me:3000/es\")",
+      "Bash(ls /c/Users/Public/Desktop/prog/base-ecommerce/apps/web/src/app/\\\\\\(storefront\\\\\\)/)"
     ]
   }
 }

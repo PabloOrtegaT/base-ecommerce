@@ -67,18 +67,18 @@ export default async function AdminLayout({
   return (
     <div className="min-h-screen bg-muted/30">
       {/* Top bar */}
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur">
+      <header className="sticky top-0 z-50 w-full border-b bg-nav/90 backdrop-blur-md text-nav-foreground">
         <div className="flex h-14 items-center justify-between px-6">
           <div className="flex items-center gap-2">
             <ShieldCheck className="h-5 w-5 text-primary" />
             <Link href="/admin" className="font-semibold">
               Admin
             </Link>
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            <ChevronRight className="h-4 w-4 text-nav-foreground/50" />
             <Badge variant={roleColors[role] ?? "secondary"}>{role}</Badge>
           </div>
           <div className="flex items-center gap-2">
-            <a href={storefrontHref} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <a href={storefrontHref} className="text-sm text-nav-foreground/60 hover:text-nav-foreground transition-colors">
               ← Storefront
             </a>
             <ThemeToggle />
@@ -88,7 +88,7 @@ export default async function AdminLayout({
 
       <div className="flex">
         {/* Sidebar */}
-        <aside className="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-48 shrink-0 border-r bg-background md:flex md:flex-col">
+        <aside className="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-48 shrink-0 border-r bg-nav text-nav-foreground md:flex md:flex-col">
           <nav className="flex-1 overflow-y-auto p-3 space-y-1">
             {adminNavigation.map((item) => {
               const accessible = canAccessAdminRoute(role, item.route);
@@ -96,7 +96,7 @@ export default async function AdminLayout({
                 return (
                   <div
                     key={item.href}
-                    className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground/40 cursor-not-allowed"
+                    className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-nav-foreground/30 cursor-not-allowed"
                   >
                     <span className="shrink-0">{item.icon}</span>
                     <span>{item.label}</span>
@@ -117,7 +117,7 @@ export default async function AdminLayout({
           <div className="p-3">
             <Link
               href="/logout"
-              className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-nav-foreground/60 hover:bg-nav-foreground/10 hover:text-nav-foreground transition-colors"
             >
               Sign out
             </Link>
@@ -125,13 +125,13 @@ export default async function AdminLayout({
         </aside>
 
         {/* Mobile nav */}
-        <div className="flex w-full overflow-x-auto border-b bg-background md:hidden">
+        <div className="flex w-full overflow-x-auto border-b bg-nav text-nav-foreground md:hidden">
           <nav className="flex items-center gap-1 px-3 py-2">
             {adminNavigation.map((item) => {
               const accessible = canAccessAdminRoute(role, item.route);
               if (!accessible) {
                 return (
-                  <span key={item.href} className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-muted-foreground/40 cursor-not-allowed whitespace-nowrap">
+                  <span key={item.href} className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-nav-foreground/30 cursor-not-allowed whitespace-nowrap">
                     {item.icon}
                     {item.label}
                   </span>
@@ -141,7 +141,7 @@ export default async function AdminLayout({
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-colors whitespace-nowrap"
+                  className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-nav-foreground/70 hover:bg-nav-foreground/10 hover:text-nav-foreground transition-colors whitespace-nowrap"
                 >
                   {item.icon}
                   {item.label}

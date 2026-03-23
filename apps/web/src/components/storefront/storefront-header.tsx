@@ -6,7 +6,7 @@ import { PalettePicker } from "@/components/theme/palette-picker";
 
 export function StorefrontHeader() {
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b bg-nav/50 backdrop-blur-md text-nav-foreground">
       <div className="mx-auto max-w-5xl px-6">
 
         {/* Row 1: logo — search (md+) — actions */}
@@ -30,11 +30,11 @@ export function StorefrontHeader() {
                 type="search"
                 name="q"
                 placeholder="Search products..."
-                className="h-9 w-full rounded-md border border-input bg-background pl-3 pr-10 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                className="h-9 w-full rounded-md border border-nav-foreground/20 bg-background/80 pl-3 pr-10 text-sm text-foreground placeholder:text-nav-foreground/50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               />
               <button
                 type="submit"
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-nav-foreground/60 hover:text-nav-foreground transition-colors"
                 aria-label="Search"
               >
                 <Search className="h-4 w-4" />
@@ -43,7 +43,7 @@ export function StorefrontHeader() {
           </form>
 
           {/* Right — actions */}
-          <div className="ml-auto flex items-center gap-1 shrink-0">
+          <div className="ml-auto flex items-center gap-1 shrink-0 text-nav-foreground">
             <StorefrontAuthLinks />
             <PalettePicker />
             <ThemeToggle />
@@ -58,11 +58,11 @@ export function StorefrontHeader() {
                 type="search"
                 name="q"
                 placeholder="Search products..."
-                className="h-9 w-full rounded-md border border-input bg-background pl-3 pr-10 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                className="h-9 w-full rounded-md border border-nav-foreground/20 bg-background/80 pl-3 pr-10 text-sm text-foreground placeholder:text-nav-foreground/50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               />
               <button
                 type="submit"
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-nav-foreground/60 hover:text-nav-foreground transition-colors"
                 aria-label="Search"
               >
                 <Search className="h-4 w-4" />
