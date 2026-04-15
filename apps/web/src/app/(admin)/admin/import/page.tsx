@@ -13,8 +13,8 @@ export default async function AdminImportPage() {
   const defaultCategorySlug = categories[0]?.slug ?? "catalog";
 
   return (
-    <main className="space-y-6">
+    <div className="space-y-6">
       <CsvImportForm defaultCategorySlug={defaultCategorySlug} />
-    </main>
+    </div>
   );
 }

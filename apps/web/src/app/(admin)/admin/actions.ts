@@ -2,6 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { z } from "zod";
+import {
+  categoryTemplateKeySchema,
+  couponTypeSchema,
+  currencySchema,
+  newsStatusSchema,
+  productStatusSchema,
+} from "@base-ecommerce/domain";
 import {
   createAdminCategory,
   createAdminCoupon,
@@ -138,6 +146,26 @@ function parseTagList(formData: FormData, key: string) {
     .filter((entry) => entry.length > 0);
 }
 
+function getOptionalAdminRedirectPath(formData: FormData) {
+  const redirectTo = getOptionalString(formData, "redirectTo");
+  if (!redirectTo) {
+    return undefined;
+  }
+  if (!redirectTo.startsWith("/admin")) {
+    throw createAdminMutationError("validation", 'Invalid "redirectTo" target.');
+  }
+
+  if (redirectTo.includes("..") || redirectTo.includes("?") || redirectTo.includes("#")) {
+    throw createAdminMutationError("validation", 'Invalid "redirectTo" target.');
+  }
+
+  const normalized = redirectTo === "/admin" ? redirectTo : redirectTo.replace(/\/+$/, "");
+  if (normalized !== "/admin" && !normalized.startsWith("/admin/")) {
+    throw createAdminMutationError("validation", 'Invalid "redirectTo" target.');
+  }
+  return normalized;
+}
+
 function revalidateAdminAndStorefrontPaths() {
   revalidatePath("/admin");
   revalidatePath("/admin/categories");
@@ -156,11 +184,12 @@ export async function createCategoryAction(formData: FormData) {
     successMessage: "Category created.",
     run: async () => {
       await ensurePermission("catalog:write");
-      const slug = getOptionalString(formData, "slug");
+      const slug = getRequiredString(formData, "slug");
       const description = getOptionalString(formData, "description");
       createAdminCategory({
         name: getRequiredString(formData, "name"),
-        ...(slug ? { slug } : {}),
+        templateKey: categoryTemplateKeySchema.parse(getRequiredString(formData, "templateKey")),
+        slug,
         ...(description ? { description } : {}),
       });
     },
@@ -176,9 +205,10 @@ export async function updateCategoryAction(formData: FormData) {
       await ensurePermission("catalog:write");
       const description = getOptionalString(formData, "description");
       updateAdminCategory({
-        id: getRequiredString(formData, "id"),
+        id: z.string().uuid().parse(getRequiredString(formData, "id")),
         name: getRequiredString(formData, "name"),
         slug: getRequiredString(formData, "slug"),
+        templateKey: categoryTemplateKeySchema.parse(getRequiredString(formData, "templateKey")),
         ...(description ? { description } : {}),
       });
     },
@@ -186,9 +216,10 @@ export async function updateCategoryAction(formData: FormData) {
 }
 
 export async function createProductAction(formData: FormData) {
+  const redirectPath = getOptionalAdminRedirectPath(formData) ?? "/admin/products";
   return runAdminMutation({
     action: "product.create",
-    redirectPath: "/admin/products",
+    redirectPath,
     successMessage: "Product created.",
     run: async () => {
       await ensurePermission("catalog:write");
@@ -196,7 +227,7 @@ export async function createProductAction(formData: FormData) {
       const compareAtPriceCents = getOptionalNumber(formData, "compareAtPriceCents");
       const product = createAdminProduct({
         name: getRequiredString(formData, "name"),
-        categoryId: getRequiredString(formData, "categoryId"),
+        categoryId: z.string().uuid().parse(getRequiredString(formData, "categoryId")),
         slug: getRequiredString(formData, "slug"),
         ...(description ? { description } : {}),
         baseSku: getRequiredString(formData, "baseSku"),
@@ -204,8 +235,8 @@ export async function createProductAction(formData: FormData) {
         ...(typeof compareAtPriceCents === "number" ? { compareAtPriceCents } : {}),
         stockOnHand: getRequiredNumber(formData, "stockOnHand"),
         tags: parseTagList(formData, "tags"),
-        currency: getRequiredString(formData, "currency") as "MXN" | "USD",
-        status: getRequiredString(formData, "status") as "draft" | "active" | "archived",
+        currency: currencySchema.parse(getRequiredString(formData, "currency")),
+        status: productStatusSchema.parse(getRequiredString(formData, "status")),
       });
       await syncInventoryFromRuntimeCatalogForProduct(product.id);
     },
@@ -213,26 +244,27 @@ export async function createProductAction(formData: FormData) {
 }
 
 export async function updateProductAction(formData: FormData) {
+  const redirectPath = getOptionalAdminRedirectPath(formData) ?? "/admin/products";
   return runAdminMutation({
     action: "product.update",
-    redirectPath: "/admin/products",
+    redirectPath,
     successMessage: "Product updated.",
     run: async () => {
       await ensurePermission("catalog:write");
       const description = getOptionalString(formData, "description");
       const compareAtPriceCents = getOptionalNumber(formData, "compareAtPriceCents");
       const product = updateAdminProduct({
-        id: getRequiredString(formData, "id"),
-        categoryId: getRequiredString(formData, "categoryId"),
+        id: z.string().uuid().parse(getRequiredString(formData, "id")),
+        categoryId: z.string().uuid().parse(getRequiredString(formData, "categoryId")),
         name: getRequiredString(formData, "name"),
         slug: getRequiredString(formData, "slug"),
         ...(description ? { description } : {}),
         baseSku: getRequiredString(formData, "baseSku"),
-        currency: getRequiredString(formData, "currency") as "MXN" | "USD",
+        currency: currencySchema.parse(getRequiredString(formData, "currency")),
         priceCents: getRequiredNumber(formData, "priceCents"),
         ...(typeof compareAtPriceCents === "number" ? { compareAtPriceCents } : {}),
         tags: parseTagList(formData, "tags"),
-        status: getRequiredString(formData, "status") as "draft" | "active" | "archived",
+        status: productStatusSchema.parse(getRequiredString(formData, "status")),
       });
       await syncInventoryFromRuntimeCatalogForProduct(product.id);
     },
@@ -240,15 +272,16 @@ export async function updateProductAction(formData: FormData) {
 }
 
 export async function createVariantAction(formData: FormData) {
+  const redirectPath = getOptionalAdminRedirectPath(formData) ?? "/admin/products";
   return runAdminMutation({
     action: "variant.create",
-    redirectPath: "/admin/products",
+    redirectPath,
     successMessage: "Variant created.",
     run: async () => {
       await ensurePermission("catalog:write");
       const compareAtPriceCents = getOptionalNumber(formData, "compareAtPriceCents");
       const variant = createAdminVariant({
-        productId: getRequiredString(formData, "productId"),
+        productId: z.string().uuid().parse(getRequiredString(formData, "productId")),
         sku: getRequiredString(formData, "sku"),
         name: getRequiredString(formData, "name"),
         priceCents: getRequiredNumber(formData, "priceCents"),
@@ -262,15 +295,16 @@ export async function createVariantAction(formData: FormData) {
 }
 
 export async function updateVariantAction(formData: FormData) {
+  const redirectPath = getOptionalAdminRedirectPath(formData) ?? "/admin/products";
   return runAdminMutation({
     action: "variant.update",
-    redirectPath: "/admin/products",
+    redirectPath,
     successMessage: "Variant updated.",
     run: async () => {
       await ensurePermission("catalog:write");
       const compareAtPriceCents = getOptionalNumber(formData, "compareAtPriceCents");
       const variant = updateAdminVariant({
-        id: getRequiredString(formData, "id"),
+        id: z.string().uuid().parse(getRequiredString(formData, "id")),
         sku: getRequiredString(formData, "sku"),
         name: getRequiredString(formData, "name"),
         priceCents: getRequiredNumber(formData, "priceCents"),
@@ -295,7 +329,7 @@ export async function createNewsPostAction(formData: FormData) {
         title: getRequiredString(formData, "title"),
         summary: getRequiredString(formData, "summary"),
         body: getRequiredString(formData, "body"),
-        status: getRequiredString(formData, "status") as "draft" | "published" | "archived",
+        status: newsStatusSchema.parse(getRequiredString(formData, "status")),
       });
     },
   });
@@ -309,8 +343,8 @@ export async function setNewsStatusAction(formData: FormData) {
     run: async () => {
       await ensurePermission("content:write");
       setAdminNewsStatus(
-        getRequiredString(formData, "newsId"),
-        getRequiredString(formData, "status") as "draft" | "published" | "archived",
+        z.string().uuid().parse(getRequiredString(formData, "newsId")),
+        newsStatusSchema.parse(getRequiredString(formData, "status")),
       );
     },
   });
@@ -326,13 +360,17 @@ export async function createPromoBannerAction(formData: FormData) {
       const subtitle = getOptionalString(formData, "subtitle");
       const ctaLabel = getOptionalString(formData, "ctaLabel");
       const ctaHref = getOptionalString(formData, "ctaHref");
+      const startsAt = getRequiredString(formData, "startsAt");
+      const endsAt = getRequiredString(formData, "endsAt");
+      z.string().datetime().parse(startsAt);
+      z.string().datetime().parse(endsAt);
       createAdminPromoBanner({
         title: getRequiredString(formData, "title"),
         ...(subtitle ? { subtitle } : {}),
         ...(ctaLabel ? { ctaLabel } : {}),
         ...(ctaHref ? { ctaHref } : {}),
-        startsAt: getRequiredString(formData, "startsAt"),
-        endsAt: getRequiredString(formData, "endsAt"),
+        startsAt,
+        endsAt,
         isActive: isChecked(formData, "isActive"),
       });
     },
@@ -346,7 +384,10 @@ export async function setPromoBannerActiveAction(formData: FormData) {
     successMessage: "Promo banner status updated.",
     run: async () => {
       await ensurePermission("content:write");
-      setAdminPromoBannerActive(getRequiredString(formData, "bannerId"), isChecked(formData, "isActive"));
+      setAdminPromoBannerActive(
+        z.string().uuid().parse(getRequiredString(formData, "bannerId")),
+        isChecked(formData, "isActive"),
+      );
     },
   });
 }
@@ -365,11 +406,16 @@ export async function createFeaturedSaleAction(formData: FormData) {
         .map((value) => value.trim())
         .filter((value) => value.length > 0);
 
+      const startsAt = getRequiredString(formData, "startsAt");
+      const endsAt = getRequiredString(formData, "endsAt");
+      z.string().datetime().parse(startsAt);
+      z.string().datetime().parse(endsAt);
+      z.array(z.string().uuid()).min(1).max(24).parse(productIds);
       createAdminFeaturedSale({
         title: getRequiredString(formData, "title"),
         ...(description ? { description } : {}),
-        startsAt: getRequiredString(formData, "startsAt"),
-        endsAt: getRequiredString(formData, "endsAt"),
+        startsAt,
+        endsAt,
         isActive: isChecked(formData, "isActive"),
         productIds,
       });
@@ -384,7 +430,10 @@ export async function setFeaturedSaleActiveAction(formData: FormData) {
     successMessage: "Featured sale status updated.",
     run: async () => {
       await ensurePermission("content:write");
-      setAdminFeaturedSaleActive(getRequiredString(formData, "featuredSaleId"), isChecked(formData, "isActive"));
+      setAdminFeaturedSaleActive(
+        z.string().uuid().parse(getRequiredString(formData, "featuredSaleId")),
+        isChecked(formData, "isActive"),
+      );
     },
   });
 }
@@ -400,14 +449,27 @@ export async function createCouponAction(formData: FormData) {
       const amountOffCents = getOptionalNumber(formData, "amountOffCents");
       const currency = getOptionalString(formData, "currency");
       const usageLimit = getOptionalNumber(formData, "usageLimit");
+      const startsAt = getRequiredString(formData, "startsAt");
+      const endsAt = getRequiredString(formData, "endsAt");
+      z.string().datetime().parse(startsAt);
+      z.string().datetime().parse(endsAt);
+      if (typeof percentageOff === "number") {
+        z.number().int().min(1).max(100).parse(percentageOff);
+      }
+      if (typeof amountOffCents === "number") {
+        z.number().int().positive().parse(amountOffCents);
+      }
+      if (typeof usageLimit === "number") {
+        z.number().int().positive().parse(usageLimit);
+      }
       createAdminCoupon({
         code: getRequiredString(formData, "code"),
-        type: getRequiredString(formData, "type") as "percentage" | "fixed",
+        type: couponTypeSchema.parse(getRequiredString(formData, "type")),
         ...(typeof percentageOff === "number" ? { percentageOff } : {}),
         ...(typeof amountOffCents === "number" ? { amountOffCents } : {}),
-        ...(currency ? { currency: currency as "MXN" | "USD" } : {}),
-        startsAt: getRequiredString(formData, "startsAt"),
-        endsAt: getRequiredString(formData, "endsAt"),
+        ...(currency ? { currency: currencySchema.parse(currency) } : {}),
+        startsAt,
+        endsAt,
         ...(typeof usageLimit === "number" ? { usageLimit } : {}),
         isActive: isChecked(formData, "isActive"),
       });
@@ -422,7 +484,10 @@ export async function setCouponActiveAction(formData: FormData) {
     successMessage: "Coupon status updated.",
     run: async () => {
       await ensurePermission("orders:write");
-      setAdminCouponActive(getRequiredString(formData, "couponId"), isChecked(formData, "isActive"));
+      setAdminCouponActive(
+        z.string().uuid().parse(getRequiredString(formData, "couponId")),
+        isChecked(formData, "isActive"),
+      );
     },
   });
 }
@@ -431,6 +496,9 @@ export async function importCatalogCsvAction(csvText: string) {
   const actor = await getSessionUser().catch(() => null);
   try {
     await ensurePermission("catalog:write");
+    if (csvText.length > 5_000_000) {
+      throw createAdminMutationError("validation", "CSV file exceeds maximum size of 5MB.");
+    }
     const result = importAdminCatalogFromCsv(csvText);
     await syncInventoryFromRuntimeCatalog();
     revalidateAdminAndStorefrontPaths();

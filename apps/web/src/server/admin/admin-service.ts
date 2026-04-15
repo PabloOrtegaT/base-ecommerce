@@ -1,6 +1,7 @@
 import {
   categorySchema,
   couponSchema,
+  currencySchema,
   getCategoryAttributeDefinitions,
   newsPostSchema,
   productSchema,
@@ -81,7 +82,7 @@ function normalizeSku(value: string) {
 
 function getActiveProfileContext() {
   const profile = getActiveStoreProfile();
-  const store = getProfileRuntimeStore(profile);
+  const store = getProfileRuntimeStore();
   const categoryById = new Map(store.categories.map((category) => [category.id, category]));
   const productById = new Map(store.products.map((product) => [product.id, product]));
   return { profile, store, categoryById, productById };
@@ -110,8 +111,13 @@ export function listAdminCategoryAttributes() {
   }));
 }
 
-export function createAdminCategory(input: { name: string; slug?: string; description?: string }) {
-  const { profile, store } = getActiveProfileContext();
+export function createAdminCategory(input: {
+  name: string;
+  slug?: string;
+  description?: string;
+  templateKey: string;
+}) {
+  const { store } = getActiveProfileContext();
   const slugCandidate = slugify(input.slug && input.slug.length > 0 ? input.slug : input.name);
   const existingSlugs = new Set(store.categories.map((category) => category.slug));
   const slug = ensureUniqueText(slugCandidate, existingSlugs);
@@ -119,7 +125,7 @@ export function createAdminCategory(input: { name: string; slug?: string; descri
     slug,
     name: input.name.trim(),
     ...(input.description ? { description: input.description.trim() } : {}),
-    templateKey: profile,
+    templateKey: input.templateKey,
   });
 
   const category = categorySchema.parse({
@@ -131,8 +137,14 @@ export function createAdminCategory(input: { name: string; slug?: string; descri
   return category;
 }
 
-export function updateAdminCategory(input: { id: string; name: string; slug: string; description?: string }) {
-  const { profile, store } = getActiveProfileContext();
+export function updateAdminCategory(input: {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  templateKey?: string;
+}) {
+  const { store } = getActiveProfileContext();
   const categoryIndex = store.categories.findIndex((category) => category.id === input.id);
   if (categoryIndex < 0) {
     throw createAdminMutationError("not_found", "Category not found.");
@@ -143,15 +155,20 @@ export function updateAdminCategory(input: { id: string; name: string; slug: str
     throw createAdminMutationError("not_found", "Category not found.");
   }
 
-  const existingSlugs = new Set(store.categories.filter((category) => category.id !== input.id).map((category) => category.slug));
+  const existingSlugs = new Set(
+    store.categories
+      .filter((category) => category.id !== input.id)
+      .map((category) => category.slug),
+  );
   const nextSlug = ensureUniqueText(slugify(input.slug), existingSlugs);
+  const nextTemplateKey = input.templateKey ?? currentCategory.templateKey;
 
   updateCategoryInputSchema.parse({
     id: currentCategory.id,
     name: input.name.trim(),
     slug: nextSlug,
     ...(input.description ? { description: input.description.trim() } : {}),
-    templateKey: profile,
+    templateKey: nextTemplateKey,
   });
 
   const updatedCategory = categorySchema.parse({
@@ -159,7 +176,7 @@ export function updateAdminCategory(input: { id: string; name: string; slug: str
     name: input.name.trim(),
     slug: nextSlug,
     ...(input.description ? { description: input.description.trim() } : { description: undefined }),
-    templateKey: profile,
+    templateKey: nextTemplateKey,
   });
   store.categories[categoryIndex] = updatedCategory;
   return updatedCategory;
@@ -167,15 +184,12 @@ export function updateAdminCategory(input: { id: string; name: string; slug: str
 
 export function listAdminProducts(): AdminProductRow[] {
   const { store, categoryById } = getActiveProfileContext();
-  const variantsByProductId = store.variants.reduce(
-    (accumulator, variant) => {
-      const existing = accumulator.get(variant.productId) ?? [];
-      existing.push(variant);
-      accumulator.set(variant.productId, existing);
-      return accumulator;
-    },
-    new Map<string, typeof store.variants>(),
-  );
+  const variantsByProductId = store.variants.reduce((accumulator, variant) => {
+    const existing = accumulator.get(variant.productId) ?? [];
+    existing.push(variant);
+    accumulator.set(variant.productId, existing);
+    return accumulator;
+  }, new Map<string, typeof store.variants>());
 
   return store.products.map((product) => {
     const variants = variantsByProductId.get(product.id) ?? [];
@@ -198,7 +212,9 @@ export function listAdminProducts(): AdminProductRow[] {
       variantCount: variants.length,
       updatedAt: product.updatedAt,
       ...(product.description ? { description: product.description } : {}),
-      ...(typeof product.compareAtPriceCents === "number" ? { compareAtPriceCents: product.compareAtPriceCents } : {}),
+      ...(typeof product.compareAtPriceCents === "number"
+        ? { compareAtPriceCents: product.compareAtPriceCents }
+        : {}),
     };
   });
 }
@@ -218,7 +234,9 @@ export function listAdminVariants(): AdminVariantRow[] {
       stockOnHand: variant.stockOnHand,
       isDefault: variant.isDefault,
       updatedAt: variant.updatedAt,
-      ...(typeof variant.compareAtPriceCents === "number" ? { compareAtPriceCents: variant.compareAtPriceCents } : {}),
+      ...(typeof variant.compareAtPriceCents === "number"
+        ? { compareAtPriceCents: variant.compareAtPriceCents }
+        : {}),
     };
   });
 }
@@ -337,7 +355,9 @@ export function listAdminDashboardAnalytics() {
     accumulator.set(order.status, current + 1);
     return accumulator;
   }, new Map());
-  const orderStatus: OrderStatusPoint[] = Array.from(statusCounts.entries()).map(([status, count]) => ({ status, count }));
+  const orderStatus: OrderStatusPoint[] = Array.from(statusCounts.entries()).map(
+    ([status, count]) => ({ status, count }),
+  );
 
   return {
     salesTrend,
@@ -381,7 +401,9 @@ export function createAdminProduct(input: {
     status: input.status,
     currency: input.currency,
     priceCents: input.priceCents,
-    ...(typeof input.compareAtPriceCents === "number" ? { compareAtPriceCents: input.compareAtPriceCents } : {}),
+    ...(typeof input.compareAtPriceCents === "number"
+      ? { compareAtPriceCents: input.compareAtPriceCents }
+      : {}),
     attributeValues: {},
     tags: input.tags,
   });
@@ -397,7 +419,9 @@ export function createAdminProduct(input: {
     status: input.status,
     currency: input.currency,
     priceCents: input.priceCents,
-    ...(typeof input.compareAtPriceCents === "number" ? { compareAtPriceCents: input.compareAtPriceCents } : { compareAtPriceCents: undefined }),
+    ...(typeof input.compareAtPriceCents === "number"
+      ? { compareAtPriceCents: input.compareAtPriceCents }
+      : { compareAtPriceCents: undefined }),
     tags: input.tags,
     createdAt,
     updatedAt: createdAt,
@@ -407,10 +431,15 @@ export function createAdminProduct(input: {
   const variant = productVariantSchema.parse({
     id: crypto.randomUUID(),
     productId: product.id,
-    sku: ensureUniqueText(`${baseSku}_DEFAULT`, new Set(store.variants.map((variantEntry) => variantEntry.sku))),
+    sku: ensureUniqueText(
+      `${baseSku}_DEFAULT`,
+      new Set(store.variants.map((variantEntry) => variantEntry.sku)),
+    ),
     name: "Default",
     priceCents: input.priceCents,
-    ...(typeof input.compareAtPriceCents === "number" ? { compareAtPriceCents: input.compareAtPriceCents } : { compareAtPriceCents: undefined }),
+    ...(typeof input.compareAtPriceCents === "number"
+      ? { compareAtPriceCents: input.compareAtPriceCents }
+      : { compareAtPriceCents: undefined }),
     stockOnHand: input.stockOnHand,
     isDefault: true,
     attributeValues: {},
@@ -450,8 +479,16 @@ export function updateAdminProduct(input: {
     throw createAdminMutationError("not_found", "Category not found.");
   }
 
-  const existingSlugs = new Set(store.products.filter((product) => product.id !== currentProduct.id).map((product) => product.slug));
-  const existingSkus = new Set(store.products.filter((product) => product.id !== currentProduct.id).map((product) => product.baseSku));
+  const existingSlugs = new Set(
+    store.products
+      .filter((product) => product.id !== currentProduct.id)
+      .map((product) => product.slug),
+  );
+  const existingSkus = new Set(
+    store.products
+      .filter((product) => product.id !== currentProduct.id)
+      .map((product) => product.baseSku),
+  );
   const nextSlug = ensureUniqueText(slugify(input.slug), existingSlugs);
   const nextBaseSku = ensureUniqueText(normalizeSku(input.baseSku), existingSkus);
 
@@ -466,7 +503,9 @@ export function updateAdminProduct(input: {
     currency: input.currency,
     status: input.status,
     priceCents: input.priceCents,
-    ...(typeof input.compareAtPriceCents === "number" ? { compareAtPriceCents: input.compareAtPriceCents } : {}),
+    ...(typeof input.compareAtPriceCents === "number"
+      ? { compareAtPriceCents: input.compareAtPriceCents }
+      : {}),
     tags: input.tags,
   });
 
@@ -481,7 +520,9 @@ export function updateAdminProduct(input: {
     currency: input.currency,
     status: input.status,
     priceCents: input.priceCents,
-    ...(typeof input.compareAtPriceCents === "number" ? { compareAtPriceCents: input.compareAtPriceCents } : { compareAtPriceCents: undefined }),
+    ...(typeof input.compareAtPriceCents === "number"
+      ? { compareAtPriceCents: input.compareAtPriceCents }
+      : { compareAtPriceCents: undefined }),
     tags: input.tags,
     updatedAt,
   });
@@ -498,7 +539,9 @@ export function updateAdminProduct(input: {
     store.variants[defaultVariantIndex] = productVariantSchema.parse({
       ...defaultVariant,
       priceCents: input.priceCents,
-      ...(typeof input.compareAtPriceCents === "number" ? { compareAtPriceCents: input.compareAtPriceCents } : { compareAtPriceCents: undefined }),
+      ...(typeof input.compareAtPriceCents === "number"
+        ? { compareAtPriceCents: input.compareAtPriceCents }
+        : { compareAtPriceCents: undefined }),
       updatedAt,
     });
   }
@@ -529,7 +572,9 @@ export function createAdminVariant(input: {
     sku,
     name: input.name,
     priceCents: input.priceCents,
-    ...(typeof input.compareAtPriceCents === "number" ? { compareAtPriceCents: input.compareAtPriceCents } : {}),
+    ...(typeof input.compareAtPriceCents === "number"
+      ? { compareAtPriceCents: input.compareAtPriceCents }
+      : {}),
     stockOnHand: input.stockOnHand,
     isDefault: input.isDefault,
     attributeValues: {},
@@ -548,7 +593,9 @@ export function createAdminVariant(input: {
     sku,
     name: input.name.trim(),
     priceCents: input.priceCents,
-    ...(typeof input.compareAtPriceCents === "number" ? { compareAtPriceCents: input.compareAtPriceCents } : { compareAtPriceCents: undefined }),
+    ...(typeof input.compareAtPriceCents === "number"
+      ? { compareAtPriceCents: input.compareAtPriceCents }
+      : { compareAtPriceCents: undefined }),
     stockOnHand: input.stockOnHand,
     isDefault: input.isDefault,
     attributeValues: {},
@@ -580,16 +627,26 @@ export function updateAdminVariant(input: {
   if (!currentVariant) {
     throw createAdminMutationError("not_found", "Variant not found.");
   }
-  const existingSkus = new Set(store.variants.filter((variant) => variant.id !== currentVariant.id).map((variant) => variant.sku));
+  const existingSkus = new Set(
+    store.variants
+      .filter((variant) => variant.id !== currentVariant.id)
+      .map((variant) => variant.sku),
+  );
   const nextSku = ensureUniqueText(normalizeSku(input.sku), existingSkus);
-  const nextStockOnHand = resolveVariantStockOnHand(currentVariant.stockOnHand, input.stockMode, input.stockValue);
+  const nextStockOnHand = resolveVariantStockOnHand(
+    currentVariant.stockOnHand,
+    input.stockMode,
+    input.stockValue,
+  );
 
   updateVariantInputSchema.parse({
     id: currentVariant.id,
     sku: nextSku,
     name: input.name,
     priceCents: input.priceCents,
-    ...(typeof input.compareAtPriceCents === "number" ? { compareAtPriceCents: input.compareAtPriceCents } : {}),
+    ...(typeof input.compareAtPriceCents === "number"
+      ? { compareAtPriceCents: input.compareAtPriceCents }
+      : {}),
     stockOnHand: nextStockOnHand,
     isDefault: input.isDefault,
   });
@@ -605,7 +662,9 @@ export function updateAdminVariant(input: {
     sku: nextSku,
     name: input.name.trim(),
     priceCents: input.priceCents,
-    ...(typeof input.compareAtPriceCents === "number" ? { compareAtPriceCents: input.compareAtPriceCents } : { compareAtPriceCents: undefined }),
+    ...(typeof input.compareAtPriceCents === "number"
+      ? { compareAtPriceCents: input.compareAtPriceCents }
+      : { compareAtPriceCents: undefined }),
     stockOnHand: nextStockOnHand,
     isDefault: input.isDefault,
     updatedAt: nowIso(),
@@ -665,7 +724,7 @@ export function setAdminNewsStatus(newsId: string, status: "draft" | "published"
   store.newsPosts[index] = newsPostSchema.parse({
     ...current,
     status,
-    publishedAt: status === "published" ? current.publishedAt ?? now : undefined,
+    publishedAt: status === "published" ? (current.publishedAt ?? now) : undefined,
     updatedAt: now,
   });
 }
@@ -944,6 +1003,9 @@ function toAdminOrderStatus(status: string): AdminOrderRow["status"] {
   if (status === "paid") {
     return "paid";
   }
+  if (status === "shipped") {
+    return "shipped";
+  }
   if (status === "cancelled") {
     return "cancelled";
   }
@@ -961,15 +1023,15 @@ export async function listAdminOrdersReadModel(): Promise<AdminOrderRow[]> {
     orderNumber: entry.order.orderNumber,
     status: toAdminOrderStatus(entry.order.status),
     totalCents: entry.order.totalCents,
-    currency: entry.order.currency as Currency,
+    currency: currencySchema.parse(entry.order.currency),
     itemCount: entry.order.itemCount,
     productLabel: entry.leadItem?.name ?? "Catalog item",
     createdAt: entry.order.createdAt.toISOString(),
   }));
 }
 
-export async function listAdminDashboardAnalyticsReadModel() {
-  const orders = await listAdminOrdersReadModel();
+export async function listAdminDashboardAnalyticsReadModel(ordersInput?: AdminOrderRow[]) {
+  const orders = ordersInput ?? (await listAdminOrdersReadModel());
 
   const salesByDate = orders.reduce<Map<string, number>>((accumulator, order) => {
     const date = order.createdAt.slice(0, 10);
@@ -996,10 +1058,12 @@ export async function listAdminDashboardAnalyticsReadModel() {
     accumulator.set(order.status, current + 1);
     return accumulator;
   }, new Map());
-  const orderStatus: OrderStatusPoint[] = Array.from(statusCounts.entries()).map(([status, count]) => ({
-    status,
-    count,
-  }));
+  const orderStatus: OrderStatusPoint[] = Array.from(statusCounts.entries()).map(
+    ([status, count]) => ({
+      status,
+      count,
+    }),
+  );
 
   return {
     salesTrend,

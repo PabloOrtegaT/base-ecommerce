@@ -6,11 +6,22 @@ import { getSessionUser } from "@/server/auth/session";
 import { isRecentAuthentication } from "@/server/auth/refresh-session-policy";
 import { createAdminMutationError } from "./mutation-errors";
 
-export const adminRouteKeys = ["dashboard", "categories", "products", "content", "coupons", "import"] as const;
+export const adminRouteKeys = [
+  "dashboard",
+  "orders",
+  "inventory",
+  "categories",
+  "products",
+  "content",
+  "coupons",
+  "import",
+] as const;
 export type AdminRouteKey = (typeof adminRouteKeys)[number];
 
 const routePermissions: Record<AdminRouteKey, Permission> = {
   dashboard: "content:read",
+  orders: "orders:read",
+  inventory: "inventory:adjust",
   categories: "catalog:read",
   products: "catalog:read",
   content: "content:read",
@@ -18,7 +29,7 @@ const routePermissions: Record<AdminRouteKey, Permission> = {
   import: "catalog:write",
 };
 
-const adminRoles = new Set<Role>(["owner", "manager"]);
+const adminRoles = new Set<Role>(["owner", "manager", "catalog"]);
 
 export function isAdminRole(role: Role) {
   return adminRoles.has(role);
@@ -52,7 +63,9 @@ function readHostFromUrl(rawValue: string | null) {
 
 export async function assertAdminHostAccess() {
   const requestHeaders = await headers();
-  const requestHost = normalizeHost(requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host"));
+  const requestHost = normalizeHost(
+    requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host"),
+  );
   const hostConfig = getHostRuntimeConfig();
   const policy = resolveHostPolicy({
     appBaseUrl: hostConfig.appBaseUrl,
@@ -64,13 +77,19 @@ export async function assertAdminHostAccess() {
   }
 
   if (requestHost !== policy.adminHost) {
-    throw createAdminMutationError("forbidden", "Admin routes/actions must be accessed from the admin host.");
+    throw createAdminMutationError(
+      "forbidden",
+      "Admin routes/actions must be accessed from the admin host.",
+    );
   }
 
   if (hostConfig.adminRequireCfAccess) {
     const cfIdentity = requestHeaders.get("cf-access-authenticated-user-email");
     if (!cfIdentity) {
-      throw createAdminMutationError("forbidden", "Cloudflare Access authentication is required for admin.");
+      throw createAdminMutationError(
+        "forbidden",
+        "Cloudflare Access authentication is required for admin.",
+      );
     }
   }
   return true;
@@ -97,7 +116,11 @@ export async function assertAdminMutationOrigin() {
   return true;
 }
 
-export function isValidAdminMutationOrigin(adminHost: string, originHost: string, refererHost: string) {
+export function isValidAdminMutationOrigin(
+  adminHost: string,
+  originHost: string,
+  refererHost: string,
+) {
   if (originHost && originHost !== adminHost) {
     return false;
   }
@@ -144,13 +167,19 @@ export async function ensurePermission(permission: Permission) {
 
   const role = user.role;
   if (!canAccessAdminPermission(role, permission)) {
-    throw createAdminMutationError("forbidden", `Role ${role} cannot perform action "${permission}".`);
+    throw createAdminMutationError(
+      "forbidden",
+      `Role ${role} cannot perform action "${permission}".`,
+    );
   }
 
   if (permission.endsWith(":write")) {
     const recentWindowMs = getAuthRuntimeConfig().adminRefreshIdleHours * 60 * 60 * 1000;
     if (!isRecentAuthentication(user.authenticatedAt, recentWindowMs)) {
-      throw createAdminMutationError("recent_auth_required", "Please sign in again before changing admin data.");
+      throw createAdminMutationError(
+        "recent_auth_required",
+        "Please sign in again before changing admin data.",
+      );
     }
   }
 

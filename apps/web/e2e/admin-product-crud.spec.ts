@@ -4,6 +4,8 @@ import { loginAsSeedOwner } from "./helpers/auth";
 test("admin product create and edit flow", async ({ page }) => {
   await loginAsSeedOwner(page, { nextPath: "/admin" });
   await page.goto("/admin/products");
+  await expect(page.getByRole("heading", { name: "Products" })).toBeVisible();
+  await page.getByRole("link", { name: "New product" }).click();
   await expect(page.getByRole("heading", { name: "Create product" })).toBeVisible();
 
   const suffix = Date.now().toString(36);
@@ -31,24 +33,23 @@ test("admin product create and edit flow", async ({ page }) => {
   await expect(page.locator("tr", { hasText: updatedName }).first()).toBeVisible();
   await expect(page.getByTestId("flash-toast")).toContainText("Product updated");
 
-  const variantRowLocator = () => page.locator("tr", { hasText: updatedName }).filter({ hasText: "Default" }).first();
+  const variantRowLocator = () =>
+    page.locator("tr", { hasText: updatedName }).filter({ hasText: "Default" }).first();
 
   await variantRowLocator().getByRole("link", { name: "Edit" }).click();
   const editVariantForm = page.getByRole("heading", { name: "Edit variant" });
   await expect(editVariantForm).toBeVisible();
   await expect(page.getByText("Current stock: 8")).toBeVisible();
-  await page.getByLabel("Stock mode").selectOption("adjust");
+  await page.getByRole("combobox", { name: "Stock mode" }).click();
+  await page.getByRole("option", { name: "Adjust by delta (+/-)" }).click();
   await page.getByLabel("Stock value").fill("2");
   await page.getByRole("button", { name: "Save variant changes" }).click();
   await expect(page.getByTestId("flash-toast")).toContainText("Variant updated");
-
-  await variantRowLocator().getByRole("link", { name: "Edit" }).click();
   await expect(page.getByText("Current stock: 10")).toBeVisible();
-  await page.getByLabel("Stock mode").selectOption("set");
+  await page.getByRole("combobox", { name: "Stock mode" }).click();
+  await page.getByRole("option", { name: "Set exact stock" }).click();
   await page.getByLabel("Stock value").fill("4");
   await page.getByRole("button", { name: "Save variant changes" }).click();
   await expect(page.getByTestId("flash-toast")).toContainText("Variant updated");
-
-  await variantRowLocator().getByRole("link", { name: "Edit" }).click();
   await expect(page.getByText("Current stock: 4")).toBeVisible();
 });

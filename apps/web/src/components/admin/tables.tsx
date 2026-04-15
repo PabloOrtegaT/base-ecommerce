@@ -27,7 +27,7 @@ const productActionColumn: ColumnDef<AdminProductRow> = {
   id: "actions",
   header: "Actions",
   cell: ({ row }) => (
-    <Link href={`/admin/products?editProduct=${row.original.id}`} className="text-primary hover:underline">
+    <Link href={`/admin/products/${row.original.id}`} className="text-primary hover:underline">
       Edit
     </Link>
   ),
@@ -37,7 +37,10 @@ const categoryActionColumn: ColumnDef<AdminCategoryRow> = {
   id: "actions",
   header: "Actions",
   cell: ({ row }) => (
-    <Link href={`/admin/categories?editCategory=${row.original.id}`} className="text-primary hover:underline">
+    <Link
+      href={`/admin/categories?editCategory=${row.original.id}`}
+      className="text-primary hover:underline"
+    >
       Edit
     </Link>
   ),
@@ -47,7 +50,10 @@ const variantActionColumn: ColumnDef<AdminVariantRow> = {
   id: "actions",
   header: "Actions",
   cell: ({ row }) => (
-    <Link href={`/admin/products?editVariant=${row.original.id}`} className="text-primary hover:underline">
+    <Link
+      href={`/admin/products/${row.original.productId}/variants/${row.original.id}`}
+      className="text-primary hover:underline"
+    >
       Edit
     </Link>
   ),
@@ -68,6 +74,11 @@ export function VariantsTable({ rows }: { rows: AdminVariantRow[] }) {
   return <DataTable columns={columns} data={rows} emptyLabel="No variants available." />;
 }
 
+export function InventoryTable({ rows }: { rows: AdminVariantRow[] }) {
+  const columns = React.useMemo(() => [...variantColumns, variantActionColumn], []);
+  return <DataTable columns={columns} data={rows} emptyLabel="No inventory items available." />;
+}
+
 export function OrdersTable({ rows }: { rows: AdminOrderRow[] }) {
   return <DataTable columns={orderColumns} data={rows} emptyLabel="No orders yet." />;
 }
@@ -77,7 +88,9 @@ export function CouponsTable({ rows }: { rows: AdminCouponRow[] }) {
 }
 
 export function ContentTable({ rows }: { rows: AdminContentRow[] }) {
-  return <DataTable columns={contentColumns} data={rows} emptyLabel="No content entries available." />;
+  return (
+    <DataTable columns={contentColumns} data={rows} emptyLabel="No content entries available." />
+  );
 }
 
 export function CsvErrorsTable({ rows }: { rows: CsvImportRowError[] }) {
