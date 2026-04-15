@@ -13,8 +13,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { VariantAttributeFields } from "@/components/admin/variant-attribute-fields";
 import { createVariantAction, updateProductAction } from "@/app/(admin)/admin/actions";
 import {
+  getAdminProductCategoryAttributeDefinitions,
   listAdminCategories,
   listAdminProducts,
   listAdminVariants,
@@ -42,6 +44,7 @@ export default async function AdminProductDetailsPage({ params }: AdminProductDe
   }
 
   const productVariants = variants.filter((variant) => variant.productId === product.id);
+  const attributeDefinitions = getAdminProductCategoryAttributeDefinitions(product.id);
 
   return (
     <div className="space-y-6">
@@ -221,6 +224,13 @@ export default async function AdminProductDetailsPage({ params }: AdminProductDe
               <Input id="create-variant-stock" type="number" min={0} name="stockOnHand" required />
             </div>
           </div>
+
+          {attributeDefinitions.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Attributes</p>
+              <VariantAttributeFields definitions={attributeDefinitions} defaultValues={{}} />
+            </div>
+          )}
 
           <label className="flex items-center gap-2 text-sm" htmlFor="create-variant-is-default">
             <input id="create-variant-is-default" type="checkbox" name="isDefault" />

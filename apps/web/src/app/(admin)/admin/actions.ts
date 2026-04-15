@@ -18,7 +18,9 @@ import {
   createAdminProduct,
   createAdminPromoBanner,
   createAdminVariant,
+  getAdminProductTemplateKey,
   importAdminCatalogFromCsv,
+  listAdminVariants,
   setAdminCouponActive,
   setAdminFeaturedSaleActive,
   setAdminNewsStatus,
@@ -27,6 +29,7 @@ import {
   updateAdminProduct,
   updateAdminVariant,
 } from "@/server/admin/admin-service";
+import { parseVariantFormAttributeValues } from "@/server/admin/variant-attributes";
 import { logAdminAuditEvent } from "@/server/admin/audit-log";
 import { createAdminMutationError, mapAdminMutationError } from "@/server/admin/mutation-errors";
 import { ensurePermission } from "@/server/admin/role-guard";
@@ -133,6 +136,14 @@ function getStockMode(formData: FormData, key: string): AdminVariantStockMode {
 
 function isChecked(formData: FormData, key: string) {
   return formData.get(key) === "on";
+}
+
+function parseVariantAttributesFromForm(formData: FormData, productId: string) {
+  const templateKey = getAdminProductTemplateKey(productId);
+  if (!templateKey) {
+    return undefined;
+  }
+  return parseVariantFormAttributeValues(formData, templateKey);
 }
 
 function parseTagList(formData: FormData, key: string) {
@@ -279,15 +290,18 @@ export async function createVariantAction(formData: FormData) {
     successMessage: "Variant created.",
     run: async () => {
       await ensurePermission("catalog:write");
+      const productId = z.string().uuid().parse(getRequiredString(formData, "productId"));
+      const attributeValues = parseVariantAttributesFromForm(formData, productId);
       const compareAtPriceCents = getOptionalNumber(formData, "compareAtPriceCents");
       const variant = createAdminVariant({
-        productId: z.string().uuid().parse(getRequiredString(formData, "productId")),
+        productId,
         sku: getRequiredString(formData, "sku"),
         name: getRequiredString(formData, "name"),
         priceCents: getRequiredNumber(formData, "priceCents"),
         ...(typeof compareAtPriceCents === "number" ? { compareAtPriceCents } : {}),
         stockOnHand: getRequiredNumber(formData, "stockOnHand"),
         isDefault: isChecked(formData, "isDefault"),
+        attributeValues: attributeValues ?? {},
       });
       await syncInventoryFromRuntimeCatalogForVariant(variant.id);
     },
@@ -302,9 +316,19 @@ export async function updateVariantAction(formData: FormData) {
     successMessage: "Variant updated.",
     run: async () => {
       await ensurePermission("catalog:write");
+      const variantId = z.string().uuid().parse(getRequiredString(formData, "id"));
+      const formProductId = z.string().uuid().parse(getRequiredString(formData, "productId"));
+      const existingVariant = listAdminVariants().find((v) => v.id === variantId);
+      if (!existingVariant || existingVariant.productId !== formProductId) {
+        throw createAdminMutationError(
+          "validation",
+          "Variant does not match the provided product.",
+        );
+      }
+      const attributeValues = parseVariantAttributesFromForm(formData, existingVariant.productId);
       const compareAtPriceCents = getOptionalNumber(formData, "compareAtPriceCents");
       const variant = updateAdminVariant({
-        id: z.string().uuid().parse(getRequiredString(formData, "id")),
+        id: variantId,
         sku: getRequiredString(formData, "sku"),
         name: getRequiredString(formData, "name"),
         priceCents: getRequiredNumber(formData, "priceCents"),
@@ -312,6 +336,7 @@ export async function updateVariantAction(formData: FormData) {
         stockMode: getStockMode(formData, "stockMode"),
         stockValue: getRequiredNumber(formData, "stockValue"),
         isDefault: isChecked(formData, "isDefault"),
+        ...(attributeValues !== undefined ? { attributeValues } : {}),
       });
       await syncInventoryFromRuntimeCatalogForVariant(variant.id);
     },

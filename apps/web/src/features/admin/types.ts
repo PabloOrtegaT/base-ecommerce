@@ -1,4 +1,9 @@
-import type { CouponType, Currency, ProductStatus, StoreProfile } from "@base-ecommerce/domain";
+import type {
+  CategoryTemplateKey,
+  CouponType,
+  Currency,
+  ProductStatus,
+} from "@base-ecommerce/domain";
 
 export type AdminProductRow = {
   id: string;
@@ -24,7 +29,7 @@ export type AdminCategoryRow = {
   name: string;
   slug: string;
   description?: string;
-  templateKey: StoreProfile;
+  templateKey: CategoryTemplateKey;
   attributeCount: number;
 };
 
@@ -39,6 +44,7 @@ export type AdminVariantRow = {
   currency: Currency;
   stockOnHand: number;
   isDefault: boolean;
+  attributeValues: Record<string, string | number | boolean>;
   updatedAt: string;
 };
 

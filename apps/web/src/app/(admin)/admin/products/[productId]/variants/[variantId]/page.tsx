@@ -11,8 +11,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { VariantAttributeFields } from "@/components/admin/variant-attribute-fields";
 import { updateVariantAction } from "@/app/(admin)/admin/actions";
-import { listAdminProducts, listAdminVariants } from "@/server/admin/admin-service";
+import {
+  getAdminProductCategoryAttributeDefinitions,
+  listAdminProducts,
+  listAdminVariants,
+} from "@/server/admin/admin-service";
 import { getRouteAccess } from "@/server/admin/role-guard";
 
 type AdminVariantDetailsPageProps = {
@@ -39,6 +44,8 @@ export default async function AdminVariantDetailsPage({ params }: AdminVariantDe
     notFound();
   }
 
+  const attributeDefinitions = getAdminProductCategoryAttributeDefinitions(product.id);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -56,6 +63,7 @@ export default async function AdminVariantDetailsPage({ params }: AdminVariantDe
       <section className="rounded-lg border bg-card p-6 text-card-foreground">
         <form action={updateVariantAction} className="space-y-4">
           <input type="hidden" name="id" value={variant.id} />
+          <input type="hidden" name="productId" value={product.id} />
           <input
             type="hidden"
             name="redirectTo"
@@ -137,6 +145,16 @@ export default async function AdminVariantDetailsPage({ params }: AdminVariantDe
             <span className="font-medium"> set </span>to replace or
             <span className="font-medium"> adjust </span>to add/remove units.
           </p>
+
+          {attributeDefinitions.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Attributes</p>
+              <VariantAttributeFields
+                definitions={attributeDefinitions}
+                defaultValues={variant.attributeValues}
+              />
+            </div>
+          )}
 
           <label className="flex items-center gap-2 text-sm" htmlFor="edit-variant-is-default">
             <input

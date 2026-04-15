@@ -237,8 +237,32 @@ export function listAdminVariants(): AdminVariantRow[] {
       ...(typeof variant.compareAtPriceCents === "number"
         ? { compareAtPriceCents: variant.compareAtPriceCents }
         : {}),
+      attributeValues: variant.attributeValues,
     };
   });
+}
+
+export function getAdminProductCategoryAttributeDefinitions(productId: string) {
+  const { categoryById, productById } = getActiveProfileContext();
+  const product = productById.get(productId);
+  if (!product) {
+    return [];
+  }
+  const category = categoryById.get(product.categoryId);
+  if (!category) {
+    return [];
+  }
+  return getCategoryAttributeDefinitions(category.templateKey);
+}
+
+export function getAdminProductTemplateKey(productId: string) {
+  const { categoryById, productById } = getActiveProfileContext();
+  const product = productById.get(productId);
+  if (!product) {
+    return undefined;
+  }
+  const category = categoryById.get(product.categoryId);
+  return category?.templateKey;
 }
 
 export function listAdminContentRows(): AdminContentRow[] {
@@ -557,6 +581,7 @@ export function createAdminVariant(input: {
   compareAtPriceCents?: number;
   stockOnHand: number;
   isDefault: boolean;
+  attributeValues: Record<string, string | number | boolean>;
 }) {
   const { store, productById } = getActiveProfileContext();
   const product = productById.get(input.productId);
@@ -577,7 +602,7 @@ export function createAdminVariant(input: {
       : {}),
     stockOnHand: input.stockOnHand,
     isDefault: input.isDefault,
-    attributeValues: {},
+    attributeValues: input.attributeValues,
   });
 
   if (input.isDefault) {
@@ -598,7 +623,7 @@ export function createAdminVariant(input: {
       : { compareAtPriceCents: undefined }),
     stockOnHand: input.stockOnHand,
     isDefault: input.isDefault,
-    attributeValues: {},
+    attributeValues: input.attributeValues,
     createdAt,
     updatedAt: createdAt,
   });
@@ -616,6 +641,7 @@ export function updateAdminVariant(input: {
   stockMode: AdminVariantStockMode;
   stockValue: number;
   isDefault: boolean;
+  attributeValues?: Record<string, string | number | boolean>;
 }) {
   const { store } = getActiveProfileContext();
   const variantIndex = store.variants.findIndex((variant) => variant.id === input.id);
@@ -638,6 +664,7 @@ export function updateAdminVariant(input: {
     input.stockMode,
     input.stockValue,
   );
+  const nextAttributeValues = input.attributeValues ?? currentVariant.attributeValues;
 
   updateVariantInputSchema.parse({
     id: currentVariant.id,
@@ -649,6 +676,7 @@ export function updateAdminVariant(input: {
       : {}),
     stockOnHand: nextStockOnHand,
     isDefault: input.isDefault,
+    attributeValues: nextAttributeValues,
   });
 
   if (input.isDefault) {
@@ -667,6 +695,7 @@ export function updateAdminVariant(input: {
       : { compareAtPriceCents: undefined }),
     stockOnHand: nextStockOnHand,
     isDefault: input.isDefault,
+    attributeValues: nextAttributeValues,
     updatedAt: nowIso(),
   });
   store.variants[variantIndex] = updatedVariant;
