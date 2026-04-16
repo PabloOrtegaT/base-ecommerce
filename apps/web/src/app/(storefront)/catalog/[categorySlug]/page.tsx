@@ -1,14 +1,17 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { JsonLdScript } from "@/components/seo/json-ld-script";
 import { ProductCard } from "@/components/storefront/product-card";
 import {
   getCategoryBySlug,
   listCatalogProducts,
+  listCategories,
   type ProductSort,
 } from "@/server/data/storefront-service";
 import { createPageMetadata, SEO_BRAND_NAME } from "@/server/seo/metadata";
 import { buildBreadcrumbJsonLd } from "@/server/seo/structured-data";
+import { getRelatedCategoryLinks } from "@/features/catalog/related-links";
 
 type CategoryPageProps = {
   params: Promise<{
@@ -63,6 +66,17 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
     query: resolvedSearchParams?.q ?? "",
     sort,
   });
+  const relatedCategories = getRelatedCategoryLinks({
+    categories: listCategories().map((entry) => ({
+      id: entry.id,
+      name: entry.name,
+      slug: entry.slug,
+      templateKey: entry.templateKey,
+    })),
+    currentCategoryId: category.id,
+    currentTemplateKey: category.templateKey,
+    limit: 6,
+  });
 
   return (
     <main className="space-y-6">
@@ -113,6 +127,23 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
           />
         ))}
       </section>
+
+      {relatedCategories.length > 0 && (
+        <section className="space-y-2 rounded-lg border bg-card p-4 text-card-foreground">
+          <h2 className="text-sm font-semibold">Explora también</h2>
+          <div className="flex flex-wrap gap-2">
+            {relatedCategories.map((entry) => (
+              <Link
+                key={entry.id}
+                href={`/catalog/${entry.slug}`}
+                className="rounded-full border px-3 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+              >
+                {entry.name}
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       <JsonLdScript
         value={buildBreadcrumbJsonLd([

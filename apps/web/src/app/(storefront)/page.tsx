@@ -119,7 +119,7 @@ export default async function HomePage() {
                 return (
                   <Link
                     key={category.id}
-                    href={`/catalog?category=${category.slug}`}
+                    href={`/catalog/${category.slug}`}
                     className="flex flex-col items-center gap-1.5 rounded-lg border bg-card p-3 min-w-[80px] text-center transition-all hover:-translate-y-0.5 hover:shadow-sm"
                   >
                     <div

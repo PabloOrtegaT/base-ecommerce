@@ -8,8 +8,13 @@ import { Separator } from "@/components/ui/separator";
 import { JsonLdScript } from "@/components/seo/json-ld-script";
 import { ProductPurchasePanel } from "@/components/storefront/product-purchase-panel";
 import { getProductDetailMeta } from "@/features/catalog/product-detail-meta";
+import { getRelatedCategoryLinks, getRelatedProductLinks } from "@/features/catalog/related-links";
 import { formatCurrencyFromCents, getPriceDisplay } from "@/features/catalog/pricing";
-import { getProductByRoute } from "@/server/data/storefront-service";
+import {
+  getProductByRoute,
+  listCatalogProducts,
+  listCategories,
+} from "@/server/data/storefront-service";
 import { createPageMetadata, SEO_BRAND_NAME } from "@/server/seo/metadata";
 import { buildBreadcrumbJsonLd, buildProductJsonLd } from "@/server/seo/structured-data";
 
@@ -56,6 +61,28 @@ export default async function ProductPage({ params }: ProductPageProps) {
   );
   const hasDetailContent =
     detailMeta.heroLines.length > 0 || detailMeta.specs.length > 0 || detailMeta.tips.length > 0;
+  const relatedCategoryLinks = getRelatedCategoryLinks({
+    categories: listCategories().map((entry) => ({
+      id: entry.id,
+      name: entry.name,
+      slug: entry.slug,
+      templateKey: entry.templateKey,
+    })),
+    currentCategoryId: result.category.id,
+    currentTemplateKey: result.category.templateKey,
+    limit: 4,
+  });
+  const relatedProductLinks = getRelatedProductLinks({
+    products: listCatalogProducts({ categorySlug: result.category.slug, sort: "featured" }).map(
+      (entry) => ({
+        id: entry.product.id,
+        name: entry.product.name,
+        slug: entry.product.slug,
+      }),
+    ),
+    currentProductId: result.product.id,
+    limit: 4,
+  });
 
   return (
     <div className="space-y-6">
@@ -183,6 +210,44 @@ export default async function ProductPage({ params }: ProductPageProps) {
           />
         </div>
       </div>
+
+      {(relatedCategoryLinks.length > 0 || relatedProductLinks.length > 0) && (
+        <section className="space-y-4 rounded-lg border bg-card p-4 text-card-foreground">
+          {relatedCategoryLinks.length > 0 && (
+            <div className="space-y-2">
+              <h2 className="text-sm font-semibold">Categorías relacionadas</h2>
+              <div className="flex flex-wrap gap-2">
+                {relatedCategoryLinks.map((entry) => (
+                  <Link
+                    key={entry.id}
+                    href={`/catalog/${entry.slug}`}
+                    className="rounded-full border px-3 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    {entry.name}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {relatedProductLinks.length > 0 && (
+            <div className="space-y-2">
+              <h2 className="text-sm font-semibold">Más productos en {result.category.name}</h2>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {relatedProductLinks.map((entry) => (
+                  <Link
+                    key={entry.id}
+                    href={`/catalog/${result.category.slug}/${entry.slug}`}
+                    className="rounded-md border px-3 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    {entry.name}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
+      )}
 
       <JsonLdScript
         value={buildBreadcrumbJsonLd([
