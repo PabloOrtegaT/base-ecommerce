@@ -69,3 +69,11 @@ export function getClientIpFromRequest(request: Request) {
     "unknown"
   );
 }
+
+export function getClientIpFromHeaders(headersList: Headers) {
+  return (
+    headersList.get("cf-connecting-ip") ??
+    firstForwardedIp(headersList.get("x-forwarded-for")) ??
+    "unknown"
+  );
+}

@@ -36,7 +36,25 @@ function readErrorText(error: unknown): string {
   return parts.join(" | ");
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const clientIp = getClientIpFromRequest(request);
+  const rateLimit = enforceRateLimit({
+    key: `checkout:options:${clientIp}`,
+    maxRequests: 30,
+    windowMs: 60_000,
+  });
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: "Too many requests. Please wait and try again." },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(rateLimit.retryAfterSeconds),
+        },
+      },
+    );
+  }
+
   return NextResponse.json({
     providers: listCheckoutProviderOptions(),
   });

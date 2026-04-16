@@ -1,5 +1,6 @@
 "use server";
 
+import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -39,6 +40,7 @@ import {
   syncInventoryFromRuntimeCatalogForProduct,
   syncInventoryFromRuntimeCatalogForVariant,
 } from "@/server/inventory/service";
+import { enforceRateLimit, getClientIpFromHeaders } from "@/server/security/rate-limit";
 
 type MutationConfig = {
   action: string;
@@ -49,6 +51,30 @@ type MutationConfig = {
 
 async function runAdminMutation(config: MutationConfig) {
   const actor = await getSessionUser().catch(() => null);
+  const requestHeaders = await headers();
+  const clientIp = getClientIpFromHeaders(requestHeaders);
+  const rateLimitKey = actor ? `admin:mutation:${actor.id}` : `admin:mutation:${clientIp}`;
+  const rateLimit = enforceRateLimit({
+    key: rateLimitKey,
+    maxRequests: 30,
+    windowMs: 60_000,
+  });
+  if (!rateLimit.allowed) {
+    await setFlashToast({
+      type: "error",
+      code: "rate_limited",
+      message: "Too many admin actions. Please wait and try again.",
+    });
+    logAdminAuditEvent({
+      action: config.action,
+      outcome: "failure",
+      actorId: actor?.id ?? null,
+      actorRole: actor?.role ?? null,
+      code: "rate_limited",
+      message: "Too many admin actions. Please wait and try again.",
+    });
+    redirect(config.redirectPath);
+  }
 
   try {
     await config.run();

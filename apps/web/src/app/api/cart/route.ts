@@ -10,10 +10,28 @@ import { trackError } from "@/server/observability/telemetry";
 import { enforceRateLimit, getClientIpFromRequest } from "@/server/security/rate-limit";
 import { cartWritePayloadSchema, normalizeParsedCartState } from "@/server/cart/validation";
 
-export async function GET() {
+export async function GET(request: Request) {
   const user = await getSessionUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const clientIp = getClientIpFromRequest(request);
+  const rateLimit = enforceRateLimit({
+    key: `cart:read:${user.id}:${clientIp}`,
+    maxRequests: 60,
+    windowMs: 60_000,
+  });
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: "Too many requests. Please wait and try again." },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(rateLimit.retryAfterSeconds),
+        },
+      },
+    );
   }
 
   const snapshot = await getUserCartSnapshot(user.id);
