@@ -34,3 +34,6 @@ Thumbs.db
 # claude code
 .claude/settings.json
 .playwright-mcp/
+
+# local personal notes (not for repo)
+.local-notes/
