@@ -10,6 +10,7 @@ Execute these documents in order:
 6. `05-payments-and-orders.md`
 7. `06-seo-and-discoverability.md`
 8. `07-hardening-and-release.md`
+9. `08-plant-seeds-fork-roadmap.md` — active fork-specific roadmap for this repo
 
 Do not mark a deliverable as complete unless:
 

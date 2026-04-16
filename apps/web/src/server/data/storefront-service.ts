@@ -34,19 +34,16 @@ type StorefrontContext = {
 
 function getStorefrontContext(): StorefrontContext {
   const profile = getActiveStoreProfile();
-  const seed = getProfileRuntimeStore(profile);
+  const seed = getProfileRuntimeStore();
 
   const productById = new Map(seed.products.map((product) => [product.id, product]));
   const categoryById = new Map(seed.categories.map((category) => [category.id, category]));
-  const variantsByProductId = seed.variants.reduce(
-    (acc, variant) => {
-      const existing = acc.get(variant.productId) ?? [];
-      existing.push(variant);
-      acc.set(variant.productId, existing);
-      return acc;
-    },
-    new Map<string, ProductVariant[]>(),
-  );
+  const variantsByProductId = seed.variants.reduce((acc, variant) => {
+    const existing = acc.get(variant.productId) ?? [];
+    existing.push(variant);
+    acc.set(variant.productId, existing);
+    return acc;
+  }, new Map<string, ProductVariant[]>());
 
   return {
     profile,
@@ -62,7 +59,10 @@ function getStorefrontContext(): StorefrontContext {
   };
 }
 
-function getVariantDisplayPrice(product: Product, variantsByProductId: Map<string, ProductVariant[]>) {
+function getVariantDisplayPrice(
+  product: Product,
+  variantsByProductId: Map<string, ProductVariant[]>,
+) {
   const variants = variantsByProductId.get(product.id) ?? [];
   if (variants.length === 0) {
     return product.priceCents;
@@ -81,7 +81,12 @@ export function getCategoryBySlug(slug: string) {
 }
 
 export function listCatalogProducts(params: CatalogSearchParams = {}) {
-  const { categories, products: catalogProducts, variantsByProductId, categoryById } = getStorefrontContext();
+  const {
+    categories,
+    products: catalogProducts,
+    variantsByProductId,
+    categoryById,
+  } = getStorefrontContext();
   const normalizedQuery = params.query?.trim().toLowerCase() ?? "";
   const categoryFilterId = params.categorySlug
     ? categories.find((category) => category.slug === params.categorySlug)?.id
@@ -95,7 +100,8 @@ export function listCatalogProducts(params: CatalogSearchParams = {}) {
 
   if (normalizedQuery) {
     products = products.filter((product) => {
-      const haystack = `${product.name} ${product.description ?? ""} ${product.tags.join(" ")}`.toLowerCase();
+      const haystack =
+        `${product.name} ${product.description ?? ""} ${product.tags.join(" ")}`.toLowerCase();
       return haystack.includes(normalizedQuery);
     });
   }
@@ -104,11 +110,21 @@ export function listCatalogProducts(params: CatalogSearchParams = {}) {
   if (sort === "name-asc") {
     products = [...products].sort((a, b) => a.name.localeCompare(b.name));
   } else if (sort === "price-asc") {
-    products = [...products].sort((a, b) => getVariantDisplayPrice(a, variantsByProductId) - getVariantDisplayPrice(b, variantsByProductId));
+    products = [...products].sort(
+      (a, b) =>
+        getVariantDisplayPrice(a, variantsByProductId) -
+        getVariantDisplayPrice(b, variantsByProductId),
+    );
   } else if (sort === "price-desc") {
-    products = [...products].sort((a, b) => getVariantDisplayPrice(b, variantsByProductId) - getVariantDisplayPrice(a, variantsByProductId));
+    products = [...products].sort(
+      (a, b) =>
+        getVariantDisplayPrice(b, variantsByProductId) -
+        getVariantDisplayPrice(a, variantsByProductId),
+    );
   } else {
-    products = [...products].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+    products = [...products].sort(
+      (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+    );
   }
 
   if (params.priceMin !== undefined) {
@@ -132,12 +148,18 @@ export function listCatalogProducts(params: CatalogSearchParams = {}) {
       category: category ?? null,
       variants,
       hasStock: stockOnHand > 0,
-      minVariantPriceCents: variants.length > 0 ? Math.min(...variants.map((variant) => variant.priceCents)) : product.priceCents,
+      minVariantPriceCents:
+        variants.length > 0
+          ? Math.min(...variants.map((variant) => variant.priceCents))
+          : product.priceCents,
     };
   });
 }
 
-export function getProductByRoute(categorySlug: string, productSlug: string): ProductWithContext | null {
+export function getProductByRoute(
+  categorySlug: string,
+  productSlug: string,
+): ProductWithContext | null {
   const { categories, products: catalogProducts, variantsByProductId } = getStorefrontContext();
   const category = categories.find((entry) => entry.slug === categorySlug) ?? null;
   if (!category) {
@@ -145,7 +167,8 @@ export function getProductByRoute(categorySlug: string, productSlug: string): Pr
   }
 
   const product = catalogProducts.find(
-    (item) => item.slug === productSlug && item.categoryId === category.id && item.status === "active",
+    (item) =>
+      item.slug === productSlug && item.categoryId === category.id && item.status === "active",
   );
   if (!product) {
     return null;
@@ -172,7 +195,7 @@ export function getHomeContent(now = new Date()) {
 
 export function getAdminContentSnapshot() {
   const profile = getActiveStoreProfile();
-  const seed = getProfileRuntimeStore(profile);
+  const seed = getProfileRuntimeStore();
 
   return {
     profile,

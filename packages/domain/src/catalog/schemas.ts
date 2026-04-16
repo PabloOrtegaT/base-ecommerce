@@ -6,7 +6,14 @@ export type Currency = z.infer<typeof currencySchema>;
 export const productStatusSchema = z.enum(["draft", "active", "archived"]);
 export type ProductStatus = z.infer<typeof productStatusSchema>;
 
-export const categoryTemplateKeySchema = z.enum(["prints-3d", "pc-components", "plant-seeds"]);
+export const categoryTemplateKeySchema = z.enum([
+  "seed-packet",
+  "grow-light",
+  "fertilizer",
+  "substrate",
+  "pot-container",
+  "tool-accessory",
+]);
 export type CategoryTemplateKey = z.infer<typeof categoryTemplateKeySchema>;
 
 export const attributeValueTypeSchema = z.enum(["string", "number", "boolean", "enum"]);
@@ -17,7 +24,11 @@ export type AttributeValue = z.infer<typeof attributeValueSchema>;
 
 export const attributeDefinitionSchema = z
   .object({
-    key: z.string().min(2).max(64).regex(/^[a-z0-9_]+$/),
+    key: z
+      .string()
+      .min(2)
+      .max(64)
+      .regex(/^[a-z0-9_]+$/),
     label: z.string().min(2).max(80),
     type: attributeValueTypeSchema,
     required: z.boolean().default(false),
@@ -47,7 +58,11 @@ export type AttributeDefinition = z.infer<typeof attributeDefinitionSchema>;
 
 export const categorySchema = z.object({
   id: z.string().uuid(),
-  slug: z.string().min(3).max(120).regex(/^[a-z0-9-]+$/),
+  slug: z
+    .string()
+    .min(3)
+    .max(120)
+    .regex(/^[a-z0-9-]+$/),
   name: z.string().min(2).max(100),
   description: z.string().max(600).optional(),
   templateKey: categoryTemplateKeySchema,
@@ -58,7 +73,10 @@ const ensureCompareAtGreaterThanPrice = (
   value: { priceCents: number; compareAtPriceCents?: number | undefined },
   ctx: z.RefinementCtx,
 ) => {
-  if (typeof value.compareAtPriceCents === "number" && value.compareAtPriceCents <= value.priceCents) {
+  if (
+    typeof value.compareAtPriceCents === "number" &&
+    value.compareAtPriceCents <= value.priceCents
+  ) {
     ctx.addIssue({
       code: "custom",
       path: ["compareAtPriceCents"],
@@ -72,7 +90,11 @@ export const productSchema = z
     id: z.string().uuid(),
     categoryId: z.string().uuid(),
     name: z.string().min(3).max(120),
-    slug: z.string().min(3).max(160).regex(/^[a-z0-9-]+$/),
+    slug: z
+      .string()
+      .min(3)
+      .max(160)
+      .regex(/^[a-z0-9-]+$/),
     description: z.string().max(4000).optional(),
     baseSku: z.string().min(3).max(64),
     status: productStatusSchema,

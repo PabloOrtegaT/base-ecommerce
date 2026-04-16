@@ -1,9 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { defaultStoreProfile } from "@base-ecommerce/domain";
 import { mapHomeContent } from "@/features/home/map-home-content";
 import { getStorefrontSeed } from "@/server/data/storefront-db";
 
-const seed = getStorefrontSeed(defaultStoreProfile);
+const seed = getStorefrontSeed();
 
 describe("home content mapping", () => {
   it("maps active banner, published news, and featured products from data source", () => {
@@ -18,7 +17,7 @@ describe("home content mapping", () => {
     expect(mapped.activeBanner).not.toBeNull();
     expect(mapped.news.length).toBeGreaterThan(0);
     expect(mapped.news[0]?.status).toBe("published");
-    expect(mapped.featuredProducts.length).toBe(1);
+    expect(mapped.featuredProducts.length).toBe(6);
   });
 
   it("returns empty featured products when sale is outside active window", () => {

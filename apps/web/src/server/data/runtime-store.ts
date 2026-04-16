@@ -1,4 +1,4 @@
-import { couponSchema, type Coupon, type Currency, type StoreProfile } from "@base-ecommerce/domain";
+import { couponSchema, type Coupon, type Currency } from "@base-ecommerce/domain";
 import { getStorefrontSeed, type StorefrontSeed } from "./storefront-db";
 
 export type AdminOrderStatus = "pending" | "paid" | "shipped" | "cancelled";
@@ -19,10 +19,6 @@ export type ProfileRuntimeStore = StorefrontSeed & {
   orders: AdminOrder[];
 };
 
-type RuntimeStoreByProfile = Record<StoreProfile, ProfileRuntimeStore>;
-
-const storeProfiles: StoreProfile[] = ["prints-3d", "pc-components", "plant-seeds"];
-
 function cloneStorefrontSeed(seed: StorefrontSeed): StorefrontSeed {
   return {
     categories: structuredClone(seed.categories),
@@ -34,7 +30,7 @@ function cloneStorefrontSeed(seed: StorefrontSeed): StorefrontSeed {
   };
 }
 
-function createCouponSeed(profile: StoreProfile): Coupon[] {
+function createCouponSeed(): Coupon[] {
   const sharedDates = {
     startsAt: "2026-03-01T00:00:00.000Z",
     endsAt: "2026-12-31T23:59:59.000Z",
@@ -42,11 +38,10 @@ function createCouponSeed(profile: StoreProfile): Coupon[] {
     updatedAt: "2026-03-01T00:00:00.000Z",
   };
 
-  const profilePrefix = profile.replace("-", "").toUpperCase().slice(0, 6);
   return [
     couponSchema.parse({
       id: crypto.randomUUID(),
-      code: `${profilePrefix}10`,
+      code: "PLANT10",
       type: "percentage",
       target: "subtotal",
       percentageOff: 10,
@@ -60,7 +55,7 @@ function createCouponSeed(profile: StoreProfile): Coupon[] {
     }),
     couponSchema.parse({
       id: crypto.randomUUID(),
-      code: `${profilePrefix}150`,
+      code: "PLANT150",
       type: "fixed",
       target: "subtotal",
       amountOffCents: 15000,
@@ -116,31 +111,21 @@ function createOrderSeed(seed: StorefrontSeed): AdminOrder[] {
   ];
 }
 
-function createRuntimeStoreByProfile(): RuntimeStoreByProfile {
-  return storeProfiles.reduce<RuntimeStoreByProfile>(
-    (accumulator, profile) => {
-      const seed = cloneStorefrontSeed(getStorefrontSeed(profile));
-      accumulator[profile] = {
-        ...seed,
-        coupons: createCouponSeed(profile),
-        orders: createOrderSeed(seed),
-      };
-      return accumulator;
-    },
-    {
-      "prints-3d": {} as ProfileRuntimeStore,
-      "pc-components": {} as ProfileRuntimeStore,
-      "plant-seeds": {} as ProfileRuntimeStore,
-    },
-  );
+function createRuntimeStore(): ProfileRuntimeStore {
+  const seed = cloneStorefrontSeed(getStorefrontSeed());
+  return {
+    ...seed,
+    coupons: createCouponSeed(),
+    orders: createOrderSeed(seed),
+  };
 }
 
-let runtimeStoreByProfile = createRuntimeStoreByProfile();
+let runtimeStore = createRuntimeStore();
 
-export function getProfileRuntimeStore(profile: StoreProfile): ProfileRuntimeStore {
-  return runtimeStoreByProfile[profile];
+export function getProfileRuntimeStore(): ProfileRuntimeStore {
+  return runtimeStore;
 }
 
 export function resetRuntimeStore() {
-  runtimeStoreByProfile = createRuntimeStoreByProfile();
+  runtimeStore = createRuntimeStore();
 }

@@ -9,7 +9,7 @@ export function getActiveStoreProfile(env: NodeJS.ProcessEnv = process.env): Sto
     const message = error instanceof Error ? error.message : "Unknown validation error.";
     throw new Error(
       `Invalid ${STORE_PROFILE_ENV_KEY} value "${env[STORE_PROFILE_ENV_KEY]}". ` +
-        `Expected one of: prints-3d, pc-components, plant-seeds. ${message}`,
+        `Expected: plant-seeds. ${message}`,
     );
   }
 }

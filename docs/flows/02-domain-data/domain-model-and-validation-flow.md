@@ -2,7 +2,7 @@
 
 ## Problem solved
 
-Different store verticals (3D prints, PC parts, plant seeds) need one reusable data model with strong validation and permission boundaries, without changing schema for each store type.
+The plant-seeds ecommerce fork needs a focused data model with strong validation and permission boundaries for seeds and indoor-growing supplies.
 
 ## User roles and actors
 
@@ -29,7 +29,7 @@ Different store verticals (3D prints, PC parts, plant seeds) need one reusable d
   - inventory ledger entries
   - home content entities (news, promo banner, featured sale)
 - Category templates provide typed attributes per vertical.
-- Store profile contract enforces one active profile (`prints-3d`, `pc-components`, or `plant-seeds`) at runtime.
+- Store profile contract enforces the active profile (`plant-seeds`) at runtime.
 - Attribute validation dynamically builds a strict schema from category definitions.
 - API DTO schemas provide create/update payload contracts for each aggregate.
 - RBAC matrix maps role to allowed permissions.

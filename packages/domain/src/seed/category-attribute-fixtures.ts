@@ -1,25 +1,7 @@
 import type { AttributeDefinition, CategoryTemplateKey } from "../catalog/schemas";
 
 export const categoryAttributeTemplates: Record<CategoryTemplateKey, AttributeDefinition[]> = {
-  "prints-3d": [
-    { key: "material", label: "Material", type: "enum", required: true, options: ["PLA", "ABS", "PETG", "TPU"] },
-    { key: "layer_height_mm", label: "Layer Height (mm)", type: "number", required: true, min: 0.05, max: 0.4 },
-    { key: "infill_percent", label: "Infill (%)", type: "number", required: true, min: 0, max: 100 },
-    { key: "print_time_hours", label: "Estimated Print Time (hours)", type: "number", required: false, min: 0.1 },
-  ],
-  "pc-components": [
-    { key: "socket", label: "CPU Socket", type: "string", required: true },
-    { key: "wattage", label: "Power (W)", type: "number", required: false, min: 1 },
-    { key: "form_factor", label: "Form Factor", type: "enum", required: false, options: ["ATX", "mATX", "ITX"] },
-    {
-      key: "chipset",
-      label: "Chipset",
-      type: "enum",
-      required: false,
-      options: ["B650", "X670", "Z790", "B760"],
-    },
-  ],
-  "plant-seeds": [
+  "seed-packet": [
     { key: "species", label: "Species", type: "string", required: true },
     {
       key: "sunlight",
@@ -28,7 +10,13 @@ export const categoryAttributeTemplates: Record<CategoryTemplateKey, AttributeDe
       required: true,
       options: ["full-sun", "partial-shade", "shade"],
     },
-    { key: "germination_days", label: "Germination (days)", type: "number", required: true, min: 1 },
+    {
+      key: "germination_days",
+      label: "Germination (days)",
+      type: "number",
+      required: true,
+      min: 1,
+    },
     {
       key: "seasonality",
       label: "Seasonality",
@@ -37,5 +25,141 @@ export const categoryAttributeTemplates: Record<CategoryTemplateKey, AttributeDe
       options: ["spring", "summer", "fall", "winter", "year-round"],
     },
     { key: "is_heirloom", label: "Heirloom", type: "boolean", required: false },
+  ],
+  "grow-light": [
+    {
+      key: "wattage",
+      label: "Wattage (W)",
+      type: "number",
+      required: true,
+      min: 1,
+    },
+    {
+      key: "spectrum",
+      label: "Spectrum",
+      type: "enum",
+      required: true,
+      options: ["full-spectrum", "red-blue", "white", "uv-enhanced"],
+    },
+    {
+      key: "coverage_area_m2",
+      label: "Coverage Area (m²)",
+      type: "number",
+      required: false,
+      min: 0,
+    },
+    { key: "dimmable", label: "Dimmable", type: "boolean", required: false },
+    {
+      key: "bulb_type",
+      label: "Bulb Type",
+      type: "enum",
+      required: false,
+      options: ["led", "cfl", "hid", "t5"],
+    },
+  ],
+  fertilizer: [
+    { key: "npk_ratio", label: "NPK Ratio", type: "string", required: true },
+    {
+      key: "form",
+      label: "Form",
+      type: "enum",
+      required: true,
+      options: ["liquid", "granular", "powder", "slow-release"],
+    },
+    {
+      key: "volume_ml",
+      label: "Volume (mL)",
+      type: "number",
+      required: false,
+      min: 1,
+    },
+    { key: "organic", label: "Organic", type: "boolean", required: false },
+    {
+      key: "frequency_days",
+      label: "Application Frequency (days)",
+      type: "number",
+      required: false,
+      min: 1,
+    },
+  ],
+  substrate: [
+    {
+      key: "composition",
+      label: "Composition",
+      type: "enum",
+      required: true,
+      options: ["coco-coir", "peat-moss", "perlite", "vermiculite", "compost", "mix"],
+    },
+    {
+      key: "ph_range",
+      label: "pH Range",
+      type: "string",
+      required: false,
+    },
+    {
+      key: "drainage",
+      label: "Drainage",
+      type: "enum",
+      required: false,
+      options: ["high", "medium", "low"],
+    },
+    {
+      key: "volume_l",
+      label: "Volume (L)",
+      type: "number",
+      required: false,
+      min: 0.1,
+    },
+    { key: "sterilized", label: "Sterilized", type: "boolean", required: false },
+  ],
+  "pot-container": [
+    {
+      key: "material",
+      label: "Material",
+      type: "enum",
+      required: true,
+      options: ["terracotta", "plastic", "ceramic", "fabric", "metal", "wood"],
+    },
+    {
+      key: "diameter_cm",
+      label: "Diameter (cm)",
+      type: "number",
+      required: true,
+      min: 1,
+    },
+    { key: "has_drainage", label: "Has Drainage Holes", type: "boolean", required: false },
+    { key: "color", label: "Color", type: "string", required: false },
+    { key: "reusable", label: "Reusable", type: "boolean", required: false },
+  ],
+  "tool-accessory": [
+    {
+      key: "tool_type",
+      label: "Tool Type",
+      type: "enum",
+      required: true,
+      options: ["pruner", "trowel", "sprayer", "meter", "trellis", "gloves", "mister"],
+    },
+    {
+      key: "material",
+      label: "Material",
+      type: "enum",
+      required: false,
+      options: ["stainless-steel", "aluminum", "plastic", "bamboo", "rubber"],
+    },
+    {
+      key: "length_cm",
+      label: "Length (cm)",
+      type: "number",
+      required: false,
+      min: 1,
+    },
+    { key: "ergonomic", label: "Ergonomic Grip", type: "boolean", required: false },
+    {
+      key: "warranty_months",
+      label: "Warranty (months)",
+      type: "number",
+      required: false,
+      min: 0,
+    },
   ],
 };

@@ -5,33 +5,35 @@ describe("productInputSchema", () => {
   it("accepts a valid payload", () => {
     const parsed = productInputSchema.parse({
       categoryId: "4f6fb94d-fb44-46eb-9885-dd8b16be6fdb",
-      categoryTemplateKey: "pc-components",
-      name: "Starter Motherboard",
-      slug: "starter-motherboard",
-      priceCents: 99900,
-      compareAtPriceCents: 129900,
+      categoryTemplateKey: "seed-packet",
+      name: "Basil Seeds Pack",
+      slug: "basil-seeds-pack",
+      priceCents: 9900,
+      compareAtPriceCents: 12900,
       currency: "MXN",
-      baseSku: "START-001",
+      baseSku: "SEED-BASIL-001",
       status: "active",
-      tags: ["starter"],
+      tags: ["seed", "herb"],
       attributeValues: {
-        socket: "AM5",
+        species: "Ocimum basilicum",
+        sunlight: "full-sun",
+        germination_days: 8,
       },
     });
 
-    expect(parsed.name).toBe("Starter Motherboard");
+    expect(parsed.name).toBe("Basil Seeds Pack");
     expect(parsed.status).toBe("active");
-    expect(parsed.tags).toEqual(["starter"]);
+    expect(parsed.tags).toEqual(["seed", "herb"]);
   });
 
   it("rejects compareAtPriceCents when it is not greater than priceCents", () => {
     const result = productInputSchema.safeParse({
       categoryId: "4f6fb94d-fb44-46eb-9885-dd8b16be6fdb",
-      categoryTemplateKey: "pc-components",
+      categoryTemplateKey: "seed-packet",
       name: "Invalid Product",
       slug: "invalid-product",
-      priceCents: 99900,
-      compareAtPriceCents: 99900,
+      priceCents: 9900,
+      compareAtPriceCents: 9900,
       currency: "MXN",
       baseSku: "INVALID-001",
       status: "draft",

@@ -112,7 +112,7 @@ erDiagram
     string slug UK
     string name
     string description
-    string templateKey "prints-3d | pc-components | plant-seeds"
+    string templateKey "plant-seeds"
   }
   ATTRIBUTE_DEFINITION {
     string key PK
@@ -219,32 +219,27 @@ erDiagram
 
 ### Permission matrix
 
-| Permission | owner | manager | catalog |
-|------------|:-----:|:-------:|:-------:|
-| catalog:read | ✓ | ✓ | ✓ |
-| catalog:write | ✓ | ✓ | ✓ |
-| inventory:adjust | ✓ | ✓ | ✓ |
-| content:read | ✓ | ✓ | ✓ |
-| content:write | ✓ | ✓ | — |
-| orders:read | ✓ | ✓ | — |
-| orders:write | ✓ | ✓ | — |
-| roles:manage | ✓ | — | — |
+| Permission       | owner | manager | catalog |
+| ---------------- | :---: | :-----: | :-----: |
+| catalog:read     |   ✓   |    ✓    |    ✓    |
+| catalog:write    |   ✓   |    ✓    |    ✓    |
+| inventory:adjust |   ✓   |    ✓    |    ✓    |
+| content:read     |   ✓   |    ✓    |    ✓    |
+| content:write    |   ✓   |    ✓    |    —    |
+| orders:read      |   ✓   |    ✓    |    —    |
+| orders:write     |   ✓   |    ✓    |    —    |
+| roles:manage     |   ✓   |    —    |    —    |
 
 ---
 
-## Seeded attribute template sets
+## Seeded attribute template set
 
-- `prints-3d`
-- `pc-components`
 - `plant-seeds`
 
-Each set uses typed attributes (`string`, `number`, `boolean`, `enum`) validated by the shared attribute engine.
+Uses typed attributes (`string`, `number`, `boolean`, `enum`) validated by the shared attribute engine.
 
 ## Store profile contract
 
-- Runtime storefront data is constrained to one active `STORE_PROFILE`.
-- Allowed values:
-  - `prints-3d`
-  - `pc-components`
-  - `plant-seeds`
-- Default profile for local/dev fallback: `pc-components`.
+- Runtime storefront data is constrained to the active `STORE_PROFILE`.
+- Allowed value: `plant-seeds`
+- Default profile for local/dev fallback: `plant-seeds`.

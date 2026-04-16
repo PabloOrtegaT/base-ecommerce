@@ -1,9 +1,9 @@
-import { categoryTemplateKeySchema, type CategoryTemplateKey } from "../catalog/schemas";
+import { z } from "zod";
 
-export const storeProfileSchema = categoryTemplateKeySchema;
-export type StoreProfile = CategoryTemplateKey;
+export const storeProfileSchema = z.enum(["plant-seeds"]);
+export type StoreProfile = z.infer<typeof storeProfileSchema>;
 
-export const defaultStoreProfile: StoreProfile = "pc-components";
+export const defaultStoreProfile: StoreProfile = "plant-seeds";
 
 export function resolveStoreProfile(input?: string | null): StoreProfile {
   if (!input) {

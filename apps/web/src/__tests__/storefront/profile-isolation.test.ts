@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import type { StoreProfile } from "@base-ecommerce/domain";
-import { getHomeContent, listCatalogProducts, listCategories } from "@/server/data/storefront-service";
+import { listCatalogProducts, listCategories } from "@/server/data/storefront-service";
 
 const previousStoreProfile = process.env.STORE_PROFILE;
 
@@ -13,39 +12,34 @@ function restoreStoreProfileEnv() {
   process.env.STORE_PROFILE = previousStoreProfile;
 }
 
-describe("storefront profile isolation", () => {
+describe("storefront profile", () => {
   afterEach(() => {
     restoreStoreProfileEnv();
   });
 
-  it("uses the default profile when STORE_PROFILE is missing", () => {
+  it("uses plant-seeds as the default profile when STORE_PROFILE is missing", () => {
     delete process.env.STORE_PROFILE;
 
     const categories = listCategories();
-    expect(categories).toHaveLength(1);
-    expect(categories[0]?.templateKey).toBe("pc-components");
+    expect(categories.length).toBeGreaterThan(1);
+    expect(categories.some((c) => c.templateKey === "seed-packet")).toBe(true);
+    expect(categories.some((c) => c.templateKey === "grow-light")).toBe(true);
   });
 
-  it.each<StoreProfile>(["prints-3d", "pc-components", "plant-seeds"])(
-    "returns profile-scoped catalog and home content for %s",
-    (profile) => {
-      process.env.STORE_PROFILE = profile;
+  it("returns multi-family plant catalog when STORE_PROFILE is set to plant-seeds", () => {
+    process.env.STORE_PROFILE = "plant-seeds";
 
-      const categories = listCategories();
-      expect(categories).toHaveLength(1);
-      expect(categories[0]?.templateKey).toBe(profile);
+    const categories = listCategories();
+    expect(categories.length).toBeGreaterThan(1);
+    expect(categories.some((c) => c.templateKey === "seed-packet")).toBe(true);
 
-      const products = listCatalogProducts();
-      expect(products.length).toBeGreaterThan(0);
-      expect(products.every((entry) => entry.category?.templateKey === profile)).toBe(true);
-
-      const home = getHomeContent(new Date("2026-03-10T10:00:00.000Z"));
-      expect(home.news.length).toBeGreaterThan(0);
-      expect(
-        home.featuredProducts.every((featured) => products.some((entry) => entry.product.id === featured.id)),
-      ).toBe(true);
-    },
-  );
+    const products = listCatalogProducts();
+    expect(products.length).toBeGreaterThan(0);
+    const templateKeys = new Set(
+      products.map((entry) => entry.category?.templateKey).filter(Boolean),
+    );
+    expect(templateKeys.size).toBeGreaterThan(1);
+  });
 
   it("fails fast for invalid STORE_PROFILE values", () => {
     process.env.STORE_PROFILE = "invalid-profile";

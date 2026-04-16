@@ -1,6 +1,7 @@
-# Base Ecommerce
+# Plant Seeds Ecommerce
 
-Reusable ecommerce foundation built with Next.js, TypeScript, and workspace packages.
+Plant-focused ecommerce fork built with Next.js, TypeScript, and workspace packages.
+This repository is the indoor-plant vertical (seeds, lights, fertilizers, growing supplies).
 
 ## Prerequisites
 
@@ -16,9 +17,9 @@ npm run db:migrate:local
 npm run db:seed
 ```
 
-Optional profile override (defaults to `pc-components`):
+Store profile:
 
-- Set `STORE_PROFILE` in `apps/web/.dev.vars` to one of: `prints-3d`, `pc-components`, `plant-seeds`.
+- This fork runs `plant-seeds` only. `STORE_PROFILE` in `apps/web/.dev.vars` must be `plant-seeds`.
 
 Optional local host split for admin surface:
 
@@ -181,4 +182,3 @@ Set repository secrets:
 
 - `CLOUDFLARE_ACCOUNT_ID`
 - `CLOUDFLARE_API_TOKEN`
-
