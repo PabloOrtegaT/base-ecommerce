@@ -1,7 +1,9 @@
 import { z } from "zod";
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/server/auth/session";
+import { getOrderById } from "@/server/orders/service";
 import { processPaymentWebhookEvent } from "@/server/payments/webhook-service";
+import { enforceRateLimit, getClientIpFromRequest } from "@/server/security/rate-limit";
 
 const mockCompletePayloadSchema = z.object({
   orderId: z.string().uuid(),
@@ -16,10 +18,29 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const clientIp = getClientIpFromRequest(request);
+  const rateLimit = enforceRateLimit({
+    key: `payments:mock-complete:${user.id}:${clientIp}`,
+    maxRequests: 5,
+    windowMs: 60_000,
+  });
+  if (!rateLimit.allowed) {
+    return NextResponse.json({ error: "Rate limited." }, { status: 429 });
+  }
+
   const payload = await request.json().catch(() => null);
   const parsed = mockCompletePayloadSchema.safeParse(payload);
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid payload." }, { status: 400 });
+  }
+
+  const order = await getOrderById(parsed.data.orderId);
+  if (!order || order.userId !== user.id) {
+    return NextResponse.json({ error: "Order not found." }, { status: 404 });
+  }
+
+  if (order.status !== "pending_payment") {
+    return NextResponse.json({ error: "Order is not awaiting payment." }, { status: 409 });
   }
 
   const eventId = `mock_${parsed.data.providerSessionId}_${parsed.data.outcome}`;

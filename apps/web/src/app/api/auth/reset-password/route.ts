@@ -12,7 +12,7 @@ export async function POST(request: Request) {
   const clientIp = getClientIpFromRequest(request);
   const rateLimit = enforceRateLimit({
     key: `auth:reset-password:${clientIp}`,
-    maxRequests: 12,
+    maxRequests: 5,
     windowMs: 60_000,
   });
   if (!rateLimit.allowed) {
@@ -37,12 +37,12 @@ export async function POST(request: Request) {
   try {
     const result = await resetPasswordByToken(payload.data.token, payload.data.password);
     if (!result.ok) {
-      return redirect303(request, `/reset-password?token=${payload.data.token}&error=invalid_token`);
+      return redirect303(request, "/reset-password?error=invalid_token");
     }
 
     return redirect303(request, result.redirectTo);
   } catch (error) {
     trackError("api.auth.reset-password", error, { ip: clientIp });
-    return redirect303(request, `/reset-password?token=${payload.data.token}&error=reset_failed`);
+    return redirect303(request, "/reset-password?error=reset_failed");
   }
 }

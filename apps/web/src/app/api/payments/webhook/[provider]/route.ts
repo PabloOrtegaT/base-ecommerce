@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { resolveProviderFromWebhookRoute } from "@/server/payments/provider";
 import { processPaymentWebhookEvent } from "@/server/payments/webhook-service";
-import { trackError } from "@/server/observability/telemetry";
+import { trackError, trackWarn } from "@/server/observability/telemetry";
+import { enforceRateLimit, getClientIpFromRequest } from "@/server/security/rate-limit";
 
 type WebhookRouteContext = {
   params: Promise<{
@@ -11,9 +12,37 @@ type WebhookRouteContext = {
 
 export async function POST(request: Request, context: WebhookRouteContext) {
   const params = await context.params;
+  const clientIp = getClientIpFromRequest(request);
+  const rateLimit = enforceRateLimit({
+    key: `webhook:${params.provider}:${clientIp}`,
+    maxRequests: 100,
+    windowMs: 60_000,
+  });
+  if (!rateLimit.allowed) {
+    trackWarn({
+      scope: "api.payments.webhook.post",
+      message: "rate_limited",
+      metadata: {
+        provider: params.provider,
+        ip: clientIp,
+        retryAfterSeconds: rateLimit.retryAfterSeconds,
+      },
+    });
+    return NextResponse.json({ error: "Rate limited." }, { status: 429 });
+  }
+
+  let event;
   try {
     const provider = resolveProviderFromWebhookRoute(params.provider);
-    const event = await provider.parseWebhookEvent(request);
+    event = await provider.parseWebhookEvent(request);
+  } catch (error) {
+    trackError("api.payments.webhook.post", error, {
+      provider: params.provider,
+    });
+    return NextResponse.json({ error: "Invalid payment webhook event." }, { status: 400 });
+  }
+
+  try {
     const result = await processPaymentWebhookEvent(event);
 
     if (result.kind === "duplicate") {
@@ -35,6 +64,6 @@ export async function POST(request: Request, context: WebhookRouteContext) {
     trackError("api.payments.webhook.post", error, {
       provider: params.provider,
     });
-    return NextResponse.json({ error: "Invalid payment webhook event." }, { status: 400 });
+    return NextResponse.json({ error: "Webhook processing failed." }, { status: 500 });
   }
 }

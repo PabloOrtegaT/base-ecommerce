@@ -1,7 +1,6 @@
 import { eq, sql } from "drizzle-orm";
 import type { CartItem, CartState } from "@/features/cart/cart";
 import type { CartMergeSummary } from "@/features/cart/merge-summary";
-import { getActiveStoreProfile } from "@/server/config/store-profile";
 import { getDb } from "@/server/db/client";
 import { cartItemsTable, cartsTable } from "@/server/db/schema";
 import { getProfileRuntimeStore } from "@/server/data/runtime-store";
@@ -77,32 +76,40 @@ export async function replaceUserCart(
   cart: CartState,
 ): Promise<{ version: number }> {
   const db = getDb();
-  const cartRow = await getOrCreateCart(userId);
-  const cartId = cartRow.id;
-  await db.delete(cartItemsTable).where(eq(cartItemsTable.cartId, cartId));
 
-  if (cart.items.length > 0) {
-    for (const line of cart.items) {
-      const updatedAt = nowDate();
-      await db
-        .insert(cartItemsTable)
+  return db.transaction(async (tx) => {
+    const cartRows = await tx
+      .select()
+      .from(cartsTable)
+      .where(eq(cartsTable.userId, userId))
+      .limit(1);
+    let cartRow = cartRows[0];
+    if (!cartRow) {
+      const [created] = await tx
+        .insert(cartsTable)
         .values({
-          cartId,
-          variantId: line.variantId,
-          productId: line.productId,
-          name: line.name,
-          variantName: line.variantName,
-          href: line.href,
-          currency: line.currency,
-          unitPriceCents: line.unitPriceCents,
-          stockOnHand: line.stockOnHand,
-          quantity: line.quantity,
-          unavailableReason: line.unavailableReason,
-          updatedAt,
+          id: crypto.randomUUID(),
+          userId,
+          createdAt: nowDate(),
+          updatedAt: nowDate(),
         })
-        .onConflictDoUpdate({
-          target: [cartItemsTable.cartId, cartItemsTable.variantId],
-          set: {
+        .returning();
+      if (!created) {
+        throw new Error("Could not create cart.");
+      }
+      cartRow = created;
+    }
+    const cartId = cartRow.id;
+    await tx.delete(cartItemsTable).where(eq(cartItemsTable.cartId, cartId));
+
+    if (cart.items.length > 0) {
+      const updatedAt = nowDate();
+      await tx
+        .insert(cartItemsTable)
+        .values(
+          cart.items.map((line) => ({
+            cartId,
+            variantId: line.variantId,
             productId: line.productId,
             name: line.name,
             variantName: line.variantName,
@@ -113,25 +120,39 @@ export async function replaceUserCart(
             quantity: line.quantity,
             unavailableReason: line.unavailableReason,
             updatedAt,
+          })),
+        )
+        .onConflictDoUpdate({
+          target: [cartItemsTable.cartId, cartItemsTable.variantId],
+          set: {
+            productId: sql`excluded."productId"`,
+            name: sql`excluded."name"`,
+            variantName: sql`excluded."variantName"`,
+            href: sql`excluded."href"`,
+            currency: sql`excluded."currency"`,
+            unitPriceCents: sql`excluded."unitPriceCents"`,
+            stockOnHand: sql`excluded."stockOnHand"`,
+            quantity: sql`excluded."quantity"`,
+            unavailableReason: sql`excluded."unavailableReason"`,
+            updatedAt,
           },
         });
     }
-  }
 
-  const now = nowDate();
-  await db
-    .update(cartsTable)
-    .set({
-      updatedAt: now,
-    })
-    .where(eq(cartsTable.id, cartId));
+    const now = nowDate();
+    await tx
+      .update(cartsTable)
+      .set({
+        updatedAt: now,
+      })
+      .where(eq(cartsTable.id, cartId));
 
-  return { version: now.getTime() };
+    return { version: now.getTime() };
+  });
 }
 
 async function resolveVariantFromCanonicalCatalog(variantId: string): Promise<VariantResolution> {
-  const profile = getActiveStoreProfile();
-  const store = getProfileRuntimeStore(profile);
+  const store = getProfileRuntimeStore();
   const variant = store.variants.find((entry) => entry.id === variantId);
   if (!variant) {
     return {
@@ -151,7 +172,11 @@ async function resolveVariantFromCanonicalCatalog(variantId: string): Promise<Va
   const category = store.categories.find((entry) => entry.id === product.categoryId);
   const href = category ? `/catalog/${category.slug}/${product.slug}` : `/catalog`;
   const availability = await getCanonicalVariantAvailability(variantId);
-  if (product.status !== "active" || !availability.isPurchasable || availability.availableToSell <= 0) {
+  if (
+    product.status !== "active" ||
+    !availability.isPurchasable ||
+    availability.availableToSell <= 0
+  ) {
     return {
       status: "unavailable",
       reason: availability.reason ?? "Variant is out of stock.",
@@ -207,7 +232,10 @@ export async function getVariantAvailability(variantId: string) {
   };
 }
 
-export async function mergeGuestCartIntoUserCart(userId: string, guestCart: CartState): Promise<{
+export async function mergeGuestCartIntoUserCart(
+  userId: string,
+  guestCart: CartState,
+): Promise<{
   cart: CartState;
   summary: CartMergeSummary;
   version: number;
@@ -227,6 +255,9 @@ export async function mergeGuestCartIntoUserCart(userId: string, guestCart: Cart
 
 export async function getActiveUserCount() {
   const db = getDb();
-  const rows = await db.select({ count: sql<number>`count(*)` }).from(cartsTable).limit(1);
+  const rows = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(cartsTable)
+    .limit(1);
   return Number(rows[0]?.count ?? 0);
 }

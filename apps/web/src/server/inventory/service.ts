@@ -1,5 +1,4 @@
 import { eq, sql } from "drizzle-orm";
-import { getActiveStoreProfile } from "@/server/config/store-profile";
 import { getProfileRuntimeStore } from "@/server/data/runtime-store";
 import { getDb } from "@/server/db/client";
 import { inventoryStocksTable, orderItemsTable } from "@/server/db/schema";
@@ -73,8 +72,7 @@ function groupLines(
 }
 
 function findCatalogVariantContext(variantId: string): CatalogVariantContext | null {
-  const profile = getActiveStoreProfile();
-  const store = getProfileRuntimeStore(profile);
+  const store = getProfileRuntimeStore();
   const variant = store.variants.find((entry) => entry.id === variantId);
   if (!variant) {
     return null;
@@ -102,7 +100,11 @@ function findCatalogVariantContext(variantId: string): CatalogVariantContext | n
 
 async function getInventoryStockRow(variantId: string) {
   const db = getDb();
-  const rows = await db.select().from(inventoryStocksTable).where(eq(inventoryStocksTable.variantId, variantId)).limit(1);
+  const rows = await db
+    .select()
+    .from(inventoryStocksTable)
+    .where(eq(inventoryStocksTable.variantId, variantId))
+    .limit(1);
   return rows[0] ?? null;
 }
 
@@ -124,7 +126,9 @@ async function ensureInventoryStockRow(variantId: string, catalogStockOnHand: nu
     });
 }
 
-export async function getCanonicalVariantAvailability(variantId: string): Promise<VariantAvailability> {
+export async function getCanonicalVariantAvailability(
+  variantId: string,
+): Promise<VariantAvailability> {
   const context = findCatalogVariantContext(variantId);
   if (!context) {
     return {
@@ -136,8 +140,11 @@ export async function getCanonicalVariantAvailability(variantId: string): Promis
     };
   }
 
-  await ensureInventoryStockRow(variantId, context.variantCatalogStockOnHand);
-  const stockRow = await getInventoryStockRow(variantId);
+  let stockRow = await getInventoryStockRow(variantId);
+  if (!stockRow) {
+    await ensureInventoryStockRow(variantId, context.variantCatalogStockOnHand);
+    stockRow = await getInventoryStockRow(variantId);
+  }
   const onHandQty = Math.max(0, Number(stockRow?.onHandQty ?? context.variantCatalogStockOnHand));
   const availableToSell = Math.max(0, Number(stockRow?.availableQty ?? onHandQty));
 
@@ -191,15 +198,27 @@ export async function validateInventoryForOrder(input: {
     };
   }
 
+  const availabilities = await Promise.all(
+    grouped.map((line) => getCanonicalVariantAvailability(line.variantId)),
+  );
+
   const shortages: StockConflictLine[] = [];
-  for (const line of grouped) {
-    const availability = await getCanonicalVariantAvailability(line.variantId);
-    if (!availability.isPurchasable || availability.availableToSell < line.quantity) {
+  for (let index = 0; index < grouped.length; index += 1) {
+    const line = grouped[index];
+    if (!line) {
+      continue;
+    }
+    const availability = availabilities[index];
+    if (
+      !availability ||
+      !availability.isPurchasable ||
+      availability.availableToSell < line.quantity
+    ) {
       shortages.push({
         variantId: line.variantId,
         requestedQty: line.quantity,
-        availableQty: availability.availableToSell,
-        reason: availability.reason ?? "Insufficient stock.",
+        availableQty: availability?.availableToSell ?? 0,
+        reason: availability?.reason ?? "Insufficient stock.",
       });
     }
   }
@@ -235,26 +254,45 @@ export async function decrementInventoryForPaidOrder(orderId: string) {
 
   const now = nowDate();
   const grouped = groupLines(rows);
-  for (const row of grouped) {
+
+  const ensureValues = grouped.map((row) => {
     const context = findCatalogVariantContext(row.variantId);
-    await ensureInventoryStockRow(row.variantId, context?.variantCatalogStockOnHand ?? 0);
-    await db
-      .update(inventoryStocksTable)
-      .set({
-        onHandQty: sql`CASE
-          WHEN ${inventoryStocksTable.onHandQty} > ${row.quantity}
-            THEN ${inventoryStocksTable.onHandQty} - ${row.quantity}
-          ELSE 0
-        END`,
-        availableQty: sql`CASE
-          WHEN ${inventoryStocksTable.availableQty} > ${row.quantity}
-            THEN ${inventoryStocksTable.availableQty} - ${row.quantity}
-          ELSE 0
-        END`,
-        updatedAt: now,
-      })
-      .where(eq(inventoryStocksTable.variantId, row.variantId));
+    const normalizedOnHandQty = Math.max(0, Math.trunc(context?.variantCatalogStockOnHand ?? 0));
+    return {
+      variantId: row.variantId,
+      onHandQty: normalizedOnHandQty,
+      availableQty: normalizedOnHandQty,
+      createdAt: now,
+      updatedAt: now,
+    };
+  });
+
+  if (ensureValues.length > 0) {
+    await db.insert(inventoryStocksTable).values(ensureValues).onConflictDoNothing({
+      target: inventoryStocksTable.variantId,
+    });
   }
+
+  await Promise.all(
+    grouped.map((row) =>
+      db
+        .update(inventoryStocksTable)
+        .set({
+          onHandQty: sql`CASE
+            WHEN ${inventoryStocksTable.onHandQty} > ${row.quantity}
+              THEN ${inventoryStocksTable.onHandQty} - ${row.quantity}
+            ELSE 0
+          END`,
+          availableQty: sql`CASE
+            WHEN ${inventoryStocksTable.availableQty} > ${row.quantity}
+              THEN ${inventoryStocksTable.availableQty} - ${row.quantity}
+            ELSE 0
+          END`,
+          updatedAt: now,
+        })
+        .where(eq(inventoryStocksTable.variantId, row.variantId)),
+    ),
+  );
 
   return {
     decrementedCount: grouped.length,
@@ -294,18 +332,16 @@ export async function syncInventoryFromRuntimeCatalogForVariant(variantId: strin
 }
 
 export async function syncInventoryFromRuntimeCatalogForProduct(productId: string) {
-  const profile = getActiveStoreProfile();
-  const store = getProfileRuntimeStore(profile);
+  const store = getProfileRuntimeStore();
   const variants = store.variants.filter((variant) => variant.productId === productId);
-  for (const variant of variants) {
-    await syncInventoryStockForVariant(variant.id, variant.stockOnHand);
-  }
+  await Promise.all(
+    variants.map((variant) => syncInventoryStockForVariant(variant.id, variant.stockOnHand)),
+  );
 }
 
 export async function syncInventoryFromRuntimeCatalog() {
-  const profile = getActiveStoreProfile();
-  const store = getProfileRuntimeStore(profile);
-  for (const variant of store.variants) {
-    await syncInventoryStockForVariant(variant.id, variant.stockOnHand);
-  }
+  const store = getProfileRuntimeStore();
+  await Promise.all(
+    store.variants.map((variant) => syncInventoryStockForVariant(variant.id, variant.stockOnHand)),
+  );
 }

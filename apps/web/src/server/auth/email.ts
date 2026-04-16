@@ -17,7 +17,7 @@ function getFromAddress() {
 export async function sendVerificationEmail(to: string, verificationUrl: string) {
   const client = getEmailClient();
   if (!client) {
-    console.info(`[auth] RESEND_API_KEY not configured. Verification link for ${to}: ${verificationUrl}`);
+    console.info(`[auth] RESEND_API_KEY not configured. Skipping verification email for ${to}.`);
     return;
   }
 
@@ -32,7 +32,7 @@ export async function sendVerificationEmail(to: string, verificationUrl: string)
 export async function sendPasswordResetEmail(to: string, resetUrl: string) {
   const client = getEmailClient();
   if (!client) {
-    console.info(`[auth] RESEND_API_KEY not configured. Reset link for ${to}: ${resetUrl}`);
+    console.info(`[auth] RESEND_API_KEY not configured. Skipping password reset email for ${to}.`);
     return;
   }
 
@@ -43,4 +43,3 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string) {
     html: `<p>Click to reset your password:</p><p><a href="${resetUrl}">${resetUrl}</a></p>`,
   });
 }
-

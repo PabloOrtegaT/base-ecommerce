@@ -53,11 +53,26 @@ const runtimeEnvSchema = z.object({
   AUTH_REFRESH_TOKEN_SECRET: z.preprocess(parseOptionalString, z.string().min(16).optional()),
   APP_BASE_URL: z.preprocess(parseOptionalString, z.string().url().optional()),
   ADMIN_BASE_URL: z.preprocess(parseOptionalString, z.string().url().optional()),
-  AUTH_ACCESS_TTL_SECONDS: z.preprocess(parseOptionalPositiveInt, z.number().int().positive().optional()),
-  AUTH_REFRESH_IDLE_DAYS: z.preprocess(parseOptionalPositiveInt, z.number().int().positive().optional()),
-  AUTH_REFRESH_ABSOLUTE_DAYS: z.preprocess(parseOptionalPositiveInt, z.number().int().positive().optional()),
-  AUTH_ADMIN_REFRESH_IDLE_HOURS: z.preprocess(parseOptionalPositiveInt, z.number().int().positive().optional()),
-  AUTH_ADMIN_REFRESH_ABSOLUTE_DAYS: z.preprocess(parseOptionalPositiveInt, z.number().int().positive().optional()),
+  AUTH_ACCESS_TTL_SECONDS: z.preprocess(
+    parseOptionalPositiveInt,
+    z.number().int().positive().optional(),
+  ),
+  AUTH_REFRESH_IDLE_DAYS: z.preprocess(
+    parseOptionalPositiveInt,
+    z.number().int().positive().optional(),
+  ),
+  AUTH_REFRESH_ABSOLUTE_DAYS: z.preprocess(
+    parseOptionalPositiveInt,
+    z.number().int().positive().optional(),
+  ),
+  AUTH_ADMIN_REFRESH_IDLE_HOURS: z.preprocess(
+    parseOptionalPositiveInt,
+    z.number().int().positive().optional(),
+  ),
+  AUTH_ADMIN_REFRESH_ABSOLUTE_DAYS: z.preprocess(
+    parseOptionalPositiveInt,
+    z.number().int().positive().optional(),
+  ),
   ADMIN_REQUIRE_CF_ACCESS: z.preprocess(parseOptionalBoolean, z.boolean().optional()),
   RESEND_API_KEY: z.preprocess(parseOptionalString, z.string().min(1).optional()),
   RESEND_FROM_EMAIL: z.preprocess(
@@ -92,13 +107,21 @@ export function getRuntimeEnvironment(): RuntimeEnv {
 
 export function getAuthRuntimeConfig() {
   const env = getRuntimeEnvironment();
+  const isDev = process.env.NODE_ENV === "development" || process.env.NEXTJS_ENV === "development";
+  const refreshTokenSecret =
+    env.AUTH_REFRESH_TOKEN_SECRET ??
+    env.AUTH_SECRET ??
+    (isDev ? "dev-refresh-secret-change-me" : undefined);
+  if (!refreshTokenSecret) {
+    throw new Error("AUTH_REFRESH_TOKEN_SECRET is required in production.");
+  }
   return {
     accessTtlSeconds: env.AUTH_ACCESS_TTL_SECONDS ?? 60 * 15,
     refreshIdleDays: env.AUTH_REFRESH_IDLE_DAYS ?? 30,
     refreshAbsoluteDays: env.AUTH_REFRESH_ABSOLUTE_DAYS ?? 180,
     adminRefreshIdleHours: env.AUTH_ADMIN_REFRESH_IDLE_HOURS ?? 8,
     adminRefreshAbsoluteDays: env.AUTH_ADMIN_REFRESH_ABSOLUTE_DAYS ?? 7,
-    refreshTokenSecret: env.AUTH_REFRESH_TOKEN_SECRET ?? env.AUTH_SECRET ?? "dev-refresh-secret-change-me",
+    refreshTokenSecret,
   };
 }
 

@@ -48,8 +48,17 @@ export async function mergeCartStates(input: MergeInput): Promise<MergeResult> {
   const summary: CartMergeSummary = createEmptyCartMergeSummary();
   const nextItems: CartItem[] = [];
 
+  const variantIds = Array.from(mergedBase.keys());
+  const resolutions = await Promise.all(
+    variantIds.map((variantId) => input.resolveVariant(variantId)),
+  );
+  const resolutionByVariantId = new Map(variantIds.map((id, index) => [id, resolutions[index]]));
+
   for (const [variantId, baseLine] of mergedBase.entries()) {
-    const resolution = await input.resolveVariant(variantId);
+    const resolution = resolutionByVariantId.get(variantId);
+    if (!resolution) {
+      continue;
+    }
     const hadGuestLine = input.guestCart.items.some((line) => line.variantId === variantId);
     const hadServerLine = input.serverCart.items.some((line) => line.variantId === variantId);
 
@@ -110,7 +119,9 @@ export async function mergeCartStates(input: MergeInput): Promise<MergeResult> {
     summary.messages.push(`${summary.adjustedLines.length} item(s) were adjusted by stock limits.`);
   }
   if (summary.unavailableLines.length > 0) {
-    summary.messages.push(`${summary.unavailableLines.length} item(s) are unavailable and require review.`);
+    summary.messages.push(
+      `${summary.unavailableLines.length} item(s) are unavailable and require review.`,
+    );
   }
 
   return {

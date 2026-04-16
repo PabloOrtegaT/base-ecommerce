@@ -6,20 +6,20 @@ import {
 import { z } from "zod";
 import { calculateCartTotals, getUnavailableCartItems, type CartState } from "@/features/cart/cart";
 import { getHostRuntimeConfig } from "@/server/config/runtime-env";
-import { getActiveStoreProfile } from "@/server/config/store-profile";
 import { getProfileRuntimeStore } from "@/server/data/runtime-store";
 import { getUserCartSnapshot } from "@/server/cart/service";
-import {
-  validateInventoryForOrder,
-  type StockConflictLine,
-} from "@/server/inventory/service";
+import { validateInventoryForOrder, type StockConflictLine } from "@/server/inventory/service";
 import {
   appendOrderStatusTimeline,
   attachCheckoutPaymentSession,
   createPendingCheckoutOrder,
   updateOrderPaymentState,
 } from "@/server/orders/service";
-import { checkoutProviderSchema, type CheckoutProvider, type OrderCouponSnapshot } from "@/server/orders/types";
+import {
+  checkoutProviderSchema,
+  type CheckoutProvider,
+  type OrderCouponSnapshot,
+} from "@/server/orders/types";
 import { resolvePaymentProvider } from "./provider";
 
 const checkoutRequestSchema = z.object({
@@ -49,11 +49,14 @@ function normalizeCouponCode(rawCouponCode?: string) {
   return value;
 }
 
-function resolveCouponForCheckout(couponCode: string | undefined, currency: "MXN" | "USD"): Coupon | null {
+function resolveCouponForCheckout(
+  couponCode: string | undefined,
+  currency: "MXN" | "USD",
+): Coupon | null {
   if (!couponCode) {
     return null;
   }
-  const store = getProfileRuntimeStore(getActiveStoreProfile());
+  const store = getProfileRuntimeStore();
   const coupon =
     store.coupons.find((entry) => entry.code.toUpperCase() === couponCode.toUpperCase()) ?? null;
   if (!coupon) {
@@ -174,8 +177,12 @@ export async function createCheckoutSessionForUser(input: {
     orderCreated = true;
 
     const provider = resolvePaymentProvider(input.provider);
-    const successUrl = buildAbsoluteUrl(buildCheckoutPath(input.successPath ?? "/checkout/success", order.id));
-    const cancelUrl = buildAbsoluteUrl(buildCheckoutPath(input.cancelPath ?? "/checkout/cancel", order.id));
+    const successUrl = buildAbsoluteUrl(
+      buildCheckoutPath(input.successPath ?? "/checkout/success", order.id),
+    );
+    const cancelUrl = buildAbsoluteUrl(
+      buildCheckoutPath(input.cancelPath ?? "/checkout/cancel", order.id),
+    );
 
     const paymentSession = await provider.createCheckoutSession({
       orderId: order.id,

@@ -8,7 +8,7 @@ type DeleteSessionParams = {
   }>;
 };
 
-export async function DELETE(request: Request, { params }: DeleteSessionParams) {
+export async function DELETE(_request: Request, { params }: DeleteSessionParams) {
   const user = await getSessionUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

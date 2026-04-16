@@ -64,9 +64,8 @@ function firstForwardedIp(value: string | null) {
 
 export function getClientIpFromRequest(request: Request) {
   return (
-    firstForwardedIp(request.headers.get("x-forwarded-for")) ??
     request.headers.get("cf-connecting-ip") ??
+    firstForwardedIp(request.headers.get("x-forwarded-for")) ??
     "unknown"
   );
 }
-
