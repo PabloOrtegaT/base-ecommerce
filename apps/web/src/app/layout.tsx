@@ -4,7 +4,7 @@ import { FlashToastHost } from "@/components/feedback/flash-toast-host";
 import { themeInitializationScript } from "@/features/theme/theme-script";
 import { paletteInitializationScript } from "@/features/theme/palette-script";
 import { popFlashToast } from "@/server/feedback/flash-toast";
-import { getSiteBaseUrl } from "@/server/seo/metadata";
+import { getSiteBaseUrl, SEO_BRAND_NAME, SEO_BRAND_SUMMARY_ES } from "@/server/seo/metadata";
 import "./globals.css";
 
 const inter = Inter({
@@ -21,14 +21,14 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: getSiteBaseUrl(),
   title: {
-    default: "Base Ecommerce",
-    template: "%s | Base Ecommerce",
+    default: SEO_BRAND_NAME,
+    template: `%s | ${SEO_BRAND_NAME}`,
   },
-  description: "Foundation scaffold for a reusable ecommerce platform",
-  applicationName: "Base Ecommerce",
+  description: SEO_BRAND_SUMMARY_ES,
+  applicationName: SEO_BRAND_NAME,
   openGraph: {
     type: "website",
-    siteName: "Base Ecommerce",
+    siteName: SEO_BRAND_NAME,
   },
   twitter: {
     card: "summary_large_image",

@@ -10,7 +10,7 @@ import { ProductPurchasePanel } from "@/components/storefront/product-purchase-p
 import { getProductDetailMeta } from "@/features/catalog/product-detail-meta";
 import { formatCurrencyFromCents, getPriceDisplay } from "@/features/catalog/pricing";
 import { getProductByRoute } from "@/server/data/storefront-service";
-import { createPageMetadata } from "@/server/seo/metadata";
+import { createPageMetadata, SEO_BRAND_NAME } from "@/server/seo/metadata";
 import { buildBreadcrumbJsonLd, buildProductJsonLd } from "@/server/seo/structured-data";
 
 type ProductPageProps = {
@@ -27,8 +27,10 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
     return { title: "Product not found" };
   }
   return createPageMetadata({
-    title: `${result.product.name} | ${result.category.name}`,
-    description: result.product.description ?? `Buy ${result.product.name}`,
+    title: `${result.product.name} | ${result.category.name} | ${SEO_BRAND_NAME}`,
+    description:
+      result.product.description ??
+      `${result.product.name} para cultivo indoor en ${SEO_BRAND_NAME}.`,
     pathname: `/catalog/${result.category.slug}/${result.product.slug}`,
     type: "website",
   });

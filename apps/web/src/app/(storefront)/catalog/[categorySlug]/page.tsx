@@ -7,7 +7,7 @@ import {
   listCatalogProducts,
   type ProductSort,
 } from "@/server/data/storefront-service";
-import { createPageMetadata } from "@/server/seo/metadata";
+import { createPageMetadata, SEO_BRAND_NAME } from "@/server/seo/metadata";
 import { buildBreadcrumbJsonLd } from "@/server/seo/structured-data";
 
 type CategoryPageProps = {
@@ -39,8 +39,10 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
   }
 
   return createPageMetadata({
-    title: `${category.name} | Catalog`,
-    description: category.description ?? `Browse ${category.name} products.`,
+    title: `${category.name} para cultivo indoor | ${SEO_BRAND_NAME}`,
+    description:
+      category.description ??
+      `Compra ${category.name.toLowerCase()} para cultivo indoor en ${SEO_BRAND_NAME}.`,
     pathname: `/catalog/${category.slug}`,
   });
 }

@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
 
+export const SEO_BRAND_NAME = "Cannaculture";
+export const SEO_BRAND_TAGLINE_ES = "Todo para cultivo indoor: semillas, luces y sustratos.";
+export const SEO_BRAND_SUMMARY_ES = `${SEO_BRAND_NAME} — ${SEO_BRAND_TAGLINE_ES}`;
+
 function getRawBaseUrl() {
   return process.env.APP_BASE_URL ?? process.env.NEXTAUTH_URL ?? "http://127.0.0.1:3000";
 }
@@ -40,7 +44,7 @@ export function createPageMetadata(input: PageMetadataInput): Metadata {
       title: input.title,
       description: input.description,
       url: canonical,
-      siteName: "Base Ecommerce",
+      siteName: SEO_BRAND_NAME,
     },
     twitter: {
       card: "summary_large_image",

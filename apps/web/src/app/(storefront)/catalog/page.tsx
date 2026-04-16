@@ -9,12 +9,12 @@ import {
   listCategories,
   type ProductSort,
 } from "@/server/data/storefront-service";
-import { createPageMetadata } from "@/server/seo/metadata";
+import { createPageMetadata, SEO_BRAND_NAME } from "@/server/seo/metadata";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = createPageMetadata({
-  title: "Catalog",
-  description: "Browse products with filters and sorting.",
+  title: `Catálogo de cultivo indoor | ${SEO_BRAND_NAME}`,
+  description: "Explora semillas, luces y sustratos para cultivar en interior con Cannaculture.",
   pathname: "/catalog",
 });
 

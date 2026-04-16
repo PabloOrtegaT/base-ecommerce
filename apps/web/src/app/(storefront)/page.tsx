@@ -10,12 +10,12 @@ import {
   listCatalogProducts,
   listCategories,
 } from "@/server/data/storefront-service";
-import { createPageMetadata } from "@/server/seo/metadata";
+import { createPageMetadata, SEO_BRAND_NAME, SEO_BRAND_SUMMARY_ES } from "@/server/seo/metadata";
 import { buildArticleJsonLd } from "@/server/seo/structured-data";
 
 export const metadata: Metadata = createPageMetadata({
-  title: "News, Sales, and Featured Products",
-  description: "Stay updated with latest news, active discounts, and featured products.",
+  title: `${SEO_BRAND_NAME} | Todo para cultivo indoor`,
+  description: SEO_BRAND_SUMMARY_ES,
   pathname: "/",
   type: "website",
 });
