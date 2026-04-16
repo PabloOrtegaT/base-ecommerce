@@ -11,7 +11,7 @@ function getEmailClient() {
 
 function getFromAddress() {
   const env = getRuntimeEnvironment();
-  return env.RESEND_FROM_EMAIL ?? "Base Ecommerce <noreply@example.com>";
+  return env.RESEND_FROM_EMAIL ?? "Cannaculture <noreply@example.com>";
 }
 
 export async function sendVerificationEmail(to: string, verificationUrl: string) {
@@ -24,7 +24,7 @@ export async function sendVerificationEmail(to: string, verificationUrl: string)
   await client.emails.send({
     from: getFromAddress(),
     to,
-    subject: "Verify your Base Ecommerce account",
+    subject: "Verifica tu cuenta de Cannaculture",
     html: `<p>Click to verify your account:</p><p><a href="${verificationUrl}">${verificationUrl}</a></p>`,
   });
 }
@@ -39,7 +39,7 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string) {
   await client.emails.send({
     from: getFromAddress(),
     to,
-    subject: "Reset your Base Ecommerce password",
+    subject: "Restablece tu contraseña de Cannaculture",
     html: `<p>Click to reset your password:</p><p><a href="${resetUrl}">${resetUrl}</a></p>`,
   });
 }

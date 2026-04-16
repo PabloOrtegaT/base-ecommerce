@@ -47,7 +47,7 @@ test("authenticated checkout -> mock payment success -> order confirmation", asy
   await expect(page.getByRole("heading", { name: "Your cart" })).toBeVisible();
 
   // Verify cart has items
-  const subtotalText = await page.getByText("Subtotal:").textContent();
+  const subtotalText = await page.getByText("Subtotal", { exact: false }).first().textContent();
   expect(subtotalText).toBeTruthy();
 
   // Start checkout

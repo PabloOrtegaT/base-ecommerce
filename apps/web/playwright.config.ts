@@ -11,17 +11,12 @@ const adminBaseUrl =
 const nextAuthBaseUrl =
   process.env.NEXTAUTH_URL ??
   (useCloudflarePreview ? storefrontBaseUrl : `http://lvh.me:${localPort}`);
-const webServerReadyUrl =
-  process.env.PLAYWRIGHT_WEB_SERVER_READY_URL ??
-  (useCloudflarePreview ? storefrontBaseUrl : `http://localhost:${localPort}`);
+const webServerReadyUrl = process.env.PLAYWRIGHT_WEB_SERVER_READY_URL ?? storefrontBaseUrl;
 const disableWebServer = process.env.PLAYWRIGHT_DISABLE_WEBSERVER === "1";
 const runDbBootstrap = process.env.PLAYWRIGHT_RUN_DB_BOOTSTRAP === "1";
-const reuseExistingServer =
-  process.env.PLAYWRIGHT_REUSE_EXISTING_SERVER === "1"
-    ? true
-    : process.env.PLAYWRIGHT_REUSE_EXISTING_SERVER === "0"
-      ? false
-      : !process.env.CI;
+// Default to not reusing to avoid stale servers / mismatched env vars locally.
+// Set PLAYWRIGHT_REUSE_EXISTING_SERVER=1 explicitly to opt in.
+const reuseExistingServer = process.env.PLAYWRIGHT_REUSE_EXISTING_SERVER === "1";
 const globalTimeoutMs = Number(process.env.PLAYWRIGHT_GLOBAL_TIMEOUT_MS ?? "120000");
 const webServerTimeoutMs = Number(process.env.PLAYWRIGHT_WEB_SERVER_TIMEOUT_MS ?? "90000");
 const testTimeoutMs = Number(process.env.PLAYWRIGHT_TEST_TIMEOUT_MS ?? "45000");
