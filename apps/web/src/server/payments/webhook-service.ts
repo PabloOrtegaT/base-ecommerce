@@ -25,7 +25,7 @@ function nowDate() {
   return new Date();
 }
 
-function mapOrderStateFromWebhookOutcome(outcome: PaymentWebhookEvent["outcome"]) {
+export function mapOrderStateFromWebhookOutcome(outcome: PaymentWebhookEvent["outcome"]) {
   if (outcome === "succeeded") {
     return {
       status: "paid" as const,
