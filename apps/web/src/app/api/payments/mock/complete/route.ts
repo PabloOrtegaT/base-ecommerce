@@ -8,7 +8,7 @@ import { enforceRateLimit, getClientIpFromRequest } from "@/server/security/rate
 const mockCompletePayloadSchema = z.object({
   orderId: z.string().uuid(),
   providerSessionId: z.string().min(1),
-  providerId: z.enum(["mock-card", "mock-mercadopago", "mock-paypal"]).default("mock-card"),
+  providerId: z.enum(["mock-card", "mock-mercadopago"]).default("mock-card"),
   outcome: z.enum(["succeeded", "failed", "cancelled"]),
 });
 

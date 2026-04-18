@@ -13,7 +13,7 @@ import { showClientToast } from "@/components/feedback/client-toast";
 import { runSingleFlight } from "@/lib/single-flight";
 
 type CheckoutProviderOption = {
-  method: "card" | "mercadopago" | "paypal";
+  method: "card" | "mercadopago";
   label: string;
   activeProvider: string;
   mode: "live" | "mock";
@@ -32,7 +32,6 @@ const fallbackOptions: CheckoutProviderOption[] = [
     activeProvider: "mock-mercadopago",
     mode: "mock",
   },
-  { method: "paypal", label: "PayPal", activeProvider: "mock-paypal", mode: "mock" },
 ];
 
 export function CheckoutSessionForm({ authenticated, canCheckout }: CheckoutSessionFormProps) {

@@ -87,9 +87,6 @@ const runtimeEnvSchema = z.object({
   STRIPE_WEBHOOK_SECRET: z.preprocess(parseOptionalString, z.string().min(1).optional()),
   MERCADOPAGO_ACCESS_TOKEN: z.preprocess(parseOptionalString, z.string().min(1).optional()),
   MERCADOPAGO_WEBHOOK_SECRET: z.preprocess(parseOptionalString, z.string().min(1).optional()),
-  PAYPAL_CLIENT_ID: z.preprocess(parseOptionalString, z.string().min(1).optional()),
-  PAYPAL_CLIENT_SECRET: z.preprocess(parseOptionalString, z.string().min(1).optional()),
-  PAYPAL_WEBHOOK_ID: z.preprocess(parseOptionalString, z.string().min(1).optional()),
   MOCK_PAYMENT_WEBHOOK_SECRET: z.preprocess(parseOptionalString, z.string().min(1).optional()),
   INVENTORY_SWEEPER_TOKEN: z.preprocess(parseOptionalString, z.string().min(1).optional()),
 });
@@ -164,7 +161,6 @@ export function getPaymentProviderFlags() {
   return {
     stripeEnabled: Boolean(env.STRIPE_SECRET_KEY),
     mercadoPagoEnabled: Boolean(env.MERCADOPAGO_ACCESS_TOKEN),
-    paypalEnabled: Boolean(env.PAYPAL_CLIENT_ID && env.PAYPAL_CLIENT_SECRET),
   };
 }
 
@@ -175,9 +171,6 @@ export function getPaymentRuntimeConfig() {
     stripeWebhookSecret: env.STRIPE_WEBHOOK_SECRET,
     mercadoPagoAccessToken: env.MERCADOPAGO_ACCESS_TOKEN,
     mercadoPagoWebhookSecret: env.MERCADOPAGO_WEBHOOK_SECRET,
-    paypalClientId: env.PAYPAL_CLIENT_ID,
-    paypalClientSecret: env.PAYPAL_CLIENT_SECRET,
-    paypalWebhookId: env.PAYPAL_WEBHOOK_ID,
     mockWebhookSecret: env.MOCK_PAYMENT_WEBHOOK_SECRET,
   };
 }

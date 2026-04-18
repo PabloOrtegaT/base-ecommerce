@@ -10,20 +10,18 @@ import { Separator } from "@/components/ui/separator";
 
 type MockCheckoutClientProps = {
   orderId: string;
-  provider: "card" | "mercadopago" | "paypal";
+  provider: "card" | "mercadopago";
   providerSessionId: string;
 };
 
 function resolveMockProviderId(provider: MockCheckoutClientProps["provider"]) {
   if (provider === "mercadopago") return "mock-mercadopago";
-  if (provider === "paypal") return "mock-paypal";
   return "mock-card";
 }
 
 const providerLabels: Record<string, string> = {
   card: "Mock Card",
   mercadopago: "Mock Mercado Pago",
-  paypal: "Mock PayPal",
 };
 
 export function MockCheckoutClient({ orderId, provider, providerSessionId }: MockCheckoutClientProps) {

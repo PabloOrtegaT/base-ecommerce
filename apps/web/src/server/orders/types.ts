@@ -1,15 +1,13 @@
 import { z } from "zod";
 
-export const checkoutProviderSchema = z.enum(["card", "mercadopago", "paypal"]);
+export const checkoutProviderSchema = z.enum(["card", "mercadopago"]);
 export type CheckoutProvider = z.infer<typeof checkoutProviderSchema>;
 
 export const paymentProviderIdSchema = z.enum([
   "mock-card",
   "mock-mercadopago",
-  "mock-paypal",
   "stripe",
   "mercadopago",
-  "paypal",
 ]);
 export type PaymentProviderId = z.infer<typeof paymentProviderIdSchema>;
 

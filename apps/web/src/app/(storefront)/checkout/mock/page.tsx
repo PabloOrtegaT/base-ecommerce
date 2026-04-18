@@ -16,7 +16,7 @@ type MockCheckoutPageProps = {
   searchParams?: Promise<{
     order?: string;
     session?: string;
-    provider?: "card" | "mercadopago" | "paypal";
+    provider?: "card" | "mercadopago";
   }>;
 };
 

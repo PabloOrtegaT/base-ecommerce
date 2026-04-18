@@ -336,119 +336,6 @@ function createMercadoPagoProvider(accessToken: string): PaymentProviderAdapter 
   };
 }
 
-async function getPaypalAccessToken(clientId: string, clientSecret: string) {
-  const encoded = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
-  const response = await fetch("https://api-m.sandbox.paypal.com/v1/oauth2/token", {
-    method: "POST",
-    headers: {
-      Authorization: `Basic ${encoded}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: "grant_type=client_credentials",
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`PayPal OAuth token fetch failed: ${errorText}`);
-  }
-
-  const payload = (await response.json()) as { access_token: string };
-  return payload.access_token;
-}
-
-function formatPaypalMoney(cents: number) {
-  return (cents / 100).toFixed(2);
-}
-
-function createPaypalProvider(clientId: string, clientSecret: string): PaymentProviderAdapter {
-  return {
-    id: "paypal",
-    method: "paypal",
-    displayName: "PayPal",
-    async createCheckoutSession(input) {
-      const accessToken = await getPaypalAccessToken(clientId, clientSecret);
-      const response = await fetch("https://api-m.sandbox.paypal.com/v2/checkout/orders", {
-        ...jsonRequestInit({
-          intent: "CAPTURE",
-          purchase_units: [
-            {
-              custom_id: input.orderId,
-              invoice_id: input.orderNumber,
-              amount: {
-                currency_code: input.totals.currency,
-                value: formatPaypalMoney(input.totals.totalCents),
-              },
-            },
-          ],
-          application_context: {
-            return_url: input.successUrl,
-            cancel_url: input.cancelUrl,
-          },
-        }),
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`PayPal checkout order creation failed: ${errorText}`);
-      }
-
-      const payload = (await response.json()) as {
-        id: string;
-        links?: Array<{ rel?: string; href?: string }>;
-      };
-
-      const checkoutUrl = payload.links?.find((entry) => entry.rel === "approve")?.href;
-      if (!checkoutUrl) {
-        throw new Error("PayPal response did not include approval URL.");
-      }
-
-      return {
-        providerId: "paypal",
-        sessionId: payload.id,
-        checkoutUrl,
-      };
-    },
-    async parseWebhookEvent(request) {
-      const payload = await request.text();
-      const parsed = JSON.parse(payload) as {
-        id?: string;
-        event_type?: string;
-        create_time?: string;
-        resource?: {
-          id?: string;
-          purchase_units?: Array<{ custom_id?: string }>;
-        };
-      };
-
-      const eventType = parsed.event_type ?? "unknown";
-      const outcome = eventType === "PAYMENT.CAPTURE.COMPLETED"
-        ? "succeeded"
-        : eventType.includes("DENIED") || eventType.includes("FAILED")
-          ? "failed"
-          : eventType.includes("CANCEL")
-            ? "cancelled"
-            : "pending";
-
-      return {
-        providerId: "paypal",
-        eventId: parsed.id ?? `paypal_${crypto.randomUUID()}`,
-        eventType,
-        occurredAt: parsed.create_time ? new Date(parsed.create_time) : new Date(),
-        ...(parsed.resource?.purchase_units?.[0]?.custom_id
-          ? { orderId: parsed.resource.purchase_units[0].custom_id }
-          : {}),
-        ...(parsed.resource?.id ? { providerSessionId: parsed.resource.id } : {}),
-        outcome,
-        payload,
-      };
-    },
-  };
-}
-
 export function resolvePaymentProvider(method: CheckoutProvider): PaymentProviderAdapter {
   const config = getPaymentRuntimeConfig();
 
@@ -466,10 +353,7 @@ export function resolvePaymentProvider(method: CheckoutProvider): PaymentProvide
     return createMockProvider("mercadopago", "mock-mercadopago", "Mock Mercado Pago Checkout");
   }
 
-  if (config.paypalClientId && config.paypalClientSecret) {
-    return createPaypalProvider(config.paypalClientId, config.paypalClientSecret);
-  }
-  return createMockProvider("paypal", "mock-paypal", "Mock PayPal Checkout");
+  throw new Error(`Unsupported payment provider "${method}".`);
 }
 
 export function resolveProviderFromWebhookRoute(provider: string): PaymentProviderAdapter {
@@ -487,21 +371,11 @@ export function resolveProviderFromWebhookRoute(provider: string): PaymentProvid
     }
     return createMercadoPagoProvider(config.mercadoPagoAccessToken);
   }
-  if (provider === "paypal") {
-    const config = getPaymentRuntimeConfig();
-    if (!config.paypalClientId || !config.paypalClientSecret) {
-      throw new Error("PayPal webhook route is disabled because PayPal credentials are not configured.");
-    }
-    return createPaypalProvider(config.paypalClientId, config.paypalClientSecret);
-  }
   if (provider === "mock-card") {
     return createMockProvider("card", "mock-card", "Mock Card Checkout");
   }
   if (provider === "mock-mercadopago") {
     return createMockProvider("mercadopago", "mock-mercadopago", "Mock Mercado Pago Checkout");
-  }
-  if (provider === "mock-paypal") {
-    return createMockProvider("paypal", "mock-paypal", "Mock PayPal Checkout");
   }
 
   throw new Error(`Unsupported payment provider "${provider}".`);
@@ -522,11 +396,6 @@ export function listCheckoutProviderOptions() {
       activeProvider: flags.mercadoPagoEnabled ? "mercadopago" : "mock-mercadopago",
       mode: flags.mercadoPagoEnabled ? "live" : "mock",
     },
-    {
-      method: "paypal" as const,
-      label: "PayPal (Other payment forms)",
-      activeProvider: flags.paypalEnabled ? "paypal" : "mock-paypal",
-      mode: flags.paypalEnabled ? "live" : "mock",
-    },
+
   ];
 }
