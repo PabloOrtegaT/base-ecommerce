@@ -58,7 +58,12 @@ export function ProductPurchasePanel({
   const addItem = useCartStore((state) => state.addItem);
   const initialVariantId = defaultVariantId ?? variants[0]?.id ?? "";
   const initialStock = variants.find((v) => v.id === initialVariantId)?.stockOnHand ?? 0;
-  const [selectedVariantId, setSelectedVariantId] = useState(initialVariantId);
+  const [userSelectedVariantId, setUserSelectedVariantId] = useState<string | null>(null);
+  const selectedVariantId = useMemo(() => {
+    const candidate = userSelectedVariantId ?? defaultVariantId ?? variants[0]?.id ?? "";
+    const isValid = variants.some((v) => v.id === candidate);
+    return isValid ? candidate : (variants[0]?.id ?? "");
+  }, [userSelectedVariantId, defaultVariantId, variants]);
   const [quantity, setQuantity] = useState(initialStock > 0 ? 1 : 0);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [availability, setAvailability] = useState<VariantAvailability | null>(null);
@@ -73,24 +78,6 @@ export function ProductPurchasePanel({
   );
 
   useEffect(() => {
-    const stillValid = variants.some((v) => v.id === selectedVariantId);
-    if (!stillValid) {
-      const fallbackId = variants[0]?.id ?? "";
-      if (fallbackId !== selectedVariantId) {
-        setSelectedVariantId(fallbackId);
-        const fallbackStock = variants[0]?.stockOnHand ?? 0;
-        setQuantity(fallbackStock > 0 ? 1 : 0);
-        setAvailability(null);
-        setFeedback(null);
-      }
-    }
-  }, [variants, selectedVariantId]);
-
-  useEffect(() => {
-    if (!selectedVariantId) {
-      setIsCheckingAvailability(false);
-      return;
-    }
     let active = true;
     const controller = new AbortController();
     const run = async () => {
@@ -253,7 +240,7 @@ export function ProductPurchasePanel({
             <Select
               value={selectedVariant.id}
               onValueChange={(value) => {
-                setSelectedVariantId(value);
+                setUserSelectedVariantId(value);
                 const nextStock = variants.find((v) => v.id === value)?.stockOnHand ?? 0;
                 setQuantity(nextStock > 0 ? 1 : 0);
                 setAvailability(null);

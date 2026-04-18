@@ -16,10 +16,6 @@ export function FlashToastHost({ initialToast }: FlashToastHostProps) {
   const [toast, setToast] = useState<FlashToast | null>(initialToast);
 
   useEffect(() => {
-    setToast(initialToast);
-  }, [initialToast]);
-
-  useEffect(() => {
     if (!toast) return;
     const secure = window.location.protocol === "https:" ? "; Secure" : "";
     document.cookie = `${FLASH_TOAST_COOKIE}=; Max-Age=0; Path=/; SameSite=Lax${secure}`;

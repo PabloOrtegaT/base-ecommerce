@@ -17,8 +17,11 @@ function tooltipFormatter(value: unknown, currency: Currency) {
 }
 
 export function DashboardSalesTrendChart({ salesTrend, currency }: DashboardSalesTrendChartProps) {
-  const [hasMounted, setHasMounted] = React.useState(false);
-  React.useEffect(() => { setHasMounted(true); }, []);
+  const hasMounted = React.useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
 
   return (
     <div className="rounded-xl border bg-card p-5 shadow-sm">
