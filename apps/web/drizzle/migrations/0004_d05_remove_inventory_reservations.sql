@@ -5,14 +5,14 @@ SET "availableQty" = CASE
 END;
 
 UPDATE "order"
-SET "status" = "paid"
-WHERE "status" = "payment_review_required"
-  AND "paymentStatus" = "succeeded";
+SET status = 'paid'
+WHERE status = 'payment_review_required'
+  AND "paymentStatus" = 'succeeded';
 
 UPDATE "order"
-SET "status" = "pending_payment"
-WHERE "status" = "payment_review_required"
-  AND "paymentStatus" <> "succeeded";
+SET status = 'pending_payment'
+WHERE status = 'payment_review_required'
+  AND "paymentStatus" <> 'succeeded';
 
 DROP TABLE IF EXISTS "inventoryReservation";
 
