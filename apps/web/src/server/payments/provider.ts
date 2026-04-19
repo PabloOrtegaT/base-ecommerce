@@ -291,12 +291,34 @@ function createMercadoPagoProvider(accessToken: string): PaymentProviderAdapter 
     },
     async parseWebhookEvent(request) {
       const config = getPaymentRuntimeConfig();
-      const signature = request.headers.get("x-mercadopago-signature");
-      if (config.mercadoPagoWebhookSecret && signature !== config.mercadoPagoWebhookSecret) {
-        throw new Error("Invalid Mercado Pago webhook signature.");
+      const signatureHeader = request.headers.get("x-signature") ?? "";
+      const payload = await request.text();
+
+      if (config.mercadoPagoWebhookSecret) {
+        const entries = signatureHeader.split(",").map((s) => s.trim());
+        const timestamp = entries.find((e) => e.startsWith("ts="))?.slice(3);
+        const signatures = entries
+          .filter((e) => e.startsWith("v1="))
+          .map((e) => e.slice(3))
+          .filter(Boolean);
+
+        if (!timestamp || signatures.length === 0) {
+          throw new Error("Invalid Mercado Pago webhook signature format.");
+        }
+
+        const signedPayload = `${timestamp}.${payload}`;
+        const expected = createHmac("sha256", config.mercadoPagoWebhookSecret)
+          .update(signedPayload)
+          .digest("hex");
+
+        const valid = signatures.some((signature) =>
+          equalSignature(expected, signature),
+        );
+        if (!valid) {
+          throw new Error("Invalid Mercado Pago webhook signature.");
+        }
       }
 
-      const payload = await request.text();
       const parsed = JSON.parse(payload) as {
         id?: string | number;
         type?: string;
