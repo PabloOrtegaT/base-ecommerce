@@ -1,7 +1,7 @@
-import { eq, sql } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 import { getProfileRuntimeStore } from "@/server/data/runtime-store";
 import { getDb } from "@/server/db/client";
-import { inventoryStocksTable, orderItemsTable } from "@/server/db/schema";
+import { inventoryHoldsTable, inventoryStocksTable, orderItemsTable } from "@/server/db/schema";
 
 export type StockConflictLine = {
   variantId: string;
@@ -278,23 +278,14 @@ export async function decrementInventoryForPaidOrder(orderId: string) {
       db
         .update(inventoryStocksTable)
         .set({
-          onHandQty: sql`CASE
-            WHEN ${inventoryStocksTable.onHandQty} > ${row.quantity}
-              THEN ${inventoryStocksTable.onHandQty} - ${row.quantity}
-            ELSE 0
-          END`,
-          availableQty: sql`CASE
-            WHEN ${inventoryStocksTable.availableQty} > ${row.quantity}
-              THEN ${inventoryStocksTable.availableQty} - ${row.quantity}
-            ELSE 0
-          END`,
+          onHandQty: sql`${inventoryStocksTable.onHandQty} - ${row.quantity}`,
+          availableQty: sql`${inventoryStocksTable.availableQty} - ${row.quantity}`,
           updatedAt: now,
         })
         .where(eq(inventoryStocksTable.variantId, row.variantId)),
     );
-    const first = batchItems[0];
-    if (first) {
-      await db.batch([first, ...batchItems.slice(1)]);
+    if (batchItems.length > 0) {
+      await db.batch(batchItems as [typeof batchItems[number], ...typeof batchItems[number][]]);
     }
   }
 
@@ -348,4 +339,108 @@ export async function syncInventoryFromRuntimeCatalog() {
   await Promise.all(
     store.variants.map((variant) => syncInventoryStockForVariant(variant.id, variant.stockOnHand)),
   );
+}
+
+// ── Inventory holds (F4-5) ──────────────────────────────────────────────
+
+const HOLD_TTL_MS = 15 * 60 * 1000; // 15 minutes
+
+export function calculateHoldExpiresAt() {
+  return new Date(Date.now() + HOLD_TTL_MS);
+}
+
+export async function createInventoryHoldsForOrder(input: {
+  orderId: string;
+  lines: Array<{ variantId: string; quantity: number }>;
+}) {
+  const db = getDb();
+  const now = nowDate();
+  const expiresAt = calculateHoldExpiresAt();
+  const grouped = groupLines(input.lines);
+
+  if (grouped.length === 0) return { holdCount: 0 };
+
+  const holdValues = grouped.map((row) => ({
+    id: crypto.randomUUID(),
+    orderId: input.orderId,
+    variantId: row.variantId,
+    quantity: row.quantity,
+    expiresAt,
+    createdAt: now,
+  }));
+
+  await db.insert(inventoryHoldsTable).values(holdValues);
+
+  return { holdCount: grouped.length };
+}
+
+export async function releaseInventoryHoldsForOrder(orderId: string) {
+  const db = getDb();
+  await db.delete(inventoryHoldsTable).where(eq(inventoryHoldsTable.orderId, orderId));
+}
+
+export async function restoreInventoryFromHolds(orderId: string) {
+  const db = getDb();
+  const holds = await db
+    .select()
+    .from(inventoryHoldsTable)
+    .where(eq(inventoryHoldsTable.orderId, orderId));
+
+  if (holds.length === 0) return { restoredCount: 0 };
+
+  const now = nowDate();
+
+  const restoreStatements = holds.map((hold) =>
+    db
+      .update(inventoryStocksTable)
+      .set({
+        onHandQty: sql`${inventoryStocksTable.onHandQty} + ${hold.quantity}`,
+        updatedAt: now,
+      })
+      .where(eq(inventoryStocksTable.variantId, hold.variantId)),
+  );
+
+  const first = restoreStatements[0];
+  if (first) {
+    await db.batch([first, ...restoreStatements.slice(1)]);
+  }
+
+  await db.delete(inventoryHoldsTable).where(eq(inventoryHoldsTable.orderId, orderId));
+
+  return { restoredCount: holds.length };
+}
+
+export async function sweepExpiredInventoryHolds() {
+  const db = getDb();
+  const now = nowDate();
+
+  const expired = await db
+    .select()
+    .from(inventoryHoldsTable)
+    .where(sql`${inventoryHoldsTable.expiresAt} < ${now.getTime()}`);
+
+  if (expired.length === 0) return { sweptCount: 0, restoredCount: 0 };
+
+  const now2 = nowDate();
+
+  const restoreStatements = expired.map((hold) =>
+    db
+      .update(inventoryStocksTable)
+      .set({
+        onHandQty: sql`${inventoryStocksTable.onHandQty} + ${hold.quantity}`,
+        updatedAt: now2,
+      })
+      .where(eq(inventoryStocksTable.variantId, hold.variantId)),
+  );
+
+  if (restoreStatements.length > 0) {
+    await db.batch(restoreStatements as [typeof restoreStatements[number], ...typeof restoreStatements[number][]]);
+  }
+
+  const expiredIds = expired.map((h) => h.id);
+  if (expiredIds.length > 0) {
+    await db.delete(inventoryHoldsTable).where(inArray(inventoryHoldsTable.id, expiredIds));
+  }
+
+  return { sweptCount: expired.length, restoredCount: expired.length };
 }

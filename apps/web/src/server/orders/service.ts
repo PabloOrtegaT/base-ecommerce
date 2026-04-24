@@ -1,7 +1,9 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import type { CartState } from "@/features/cart/cart";
 import { getDb } from "@/server/db/client";
 import {
+  inventoryHoldsTable,
+  inventoryStocksTable,
   orderItemsTable,
   ordersTable,
   orderStatusTimelineTable,
@@ -35,6 +37,7 @@ export async function createPendingCheckoutOrder(input: {
   couponSnapshot?: OrderCouponSnapshot;
   id?: string;
   orderNumber?: string;
+  holdLines?: Array<{ variantId: string; quantity: number }>;
 }) {
   const db = getDb();
   const createdAt = nowDate();
@@ -85,19 +88,68 @@ export async function createPendingCheckoutOrder(input: {
     createdAt,
   };
 
-  const batchResult = await db.batch([
+  const holdStatements = [];
+
+  // F4-5: create inventory holds and decrement onHand + available within the same batch
+  if (input.holdLines && input.holdLines.length > 0) {
+    const holdExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
+    const holdValues = input.holdLines.map((line) => ({
+      id: crypto.randomUUID(),
+      orderId: orderId,
+      variantId: line.variantId,
+      quantity: line.quantity,
+      expiresAt: holdExpiresAt,
+      createdAt,
+    }));
+
+    holdStatements.push(db.insert(inventoryHoldsTable).values(holdValues));
+
+    for (const line of input.holdLines) {
+      // Use raw subtraction guarded by the database trigger (0006 migration).
+      // If concurrent checkout consumed the stock first, the trigger aborts
+      // the transaction and the entire batch rolls back.
+      holdStatements.push(
+        db
+          .update(inventoryStocksTable)
+          .set({
+            onHandQty: sql`${inventoryStocksTable.onHandQty} - ${line.quantity}`,
+            availableQty: sql`${inventoryStocksTable.availableQty} - ${line.quantity}`,
+            updatedAt: createdAt,
+          })
+          .where(eq(inventoryStocksTable.variantId, line.variantId)),
+      );
+    }
+  }
+
+  const batchStatements = [
     db.insert(ordersTable).values(orderValues).returning(),
     db.insert(orderItemsTable).values(itemValues),
     db.insert(orderStatusTimelineTable).values(timelineValues),
-  ]);
+    ...holdStatements,
+  ];
 
-  const orderRows = batchResult[0];
+  try {
+    const batchResult = await db.batch(
+      batchStatements as [typeof batchStatements[number], ...typeof batchStatements[number][]],
+    );
 
-  if (!orderRows || orderRows.length === 0) {
-    throw new Error("Could not create checkout order.");
+    const orderRows = batchResult[0];
+
+    if (!orderRows || orderRows.length === 0) {
+      throw new Error("Could not create checkout order.");
+    }
+
+    return orderRows[0];
+  } catch (error) {
+    // Detect trigger abort from concurrent stock consumption (0006 migration).
+    const message = error instanceof Error ? error.message : String(error);
+    if (message.includes("onHandQty would go negative")) {
+      throw new Error(
+        "StockConflict: Another customer purchased the last items while you were checking out. Please refresh your cart.",
+      );
+    }
+    throw error;
   }
-
-  return orderRows[0];
 }
 
 export async function attachCheckoutPaymentSession(input: {

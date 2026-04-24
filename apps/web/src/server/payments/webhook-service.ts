@@ -1,7 +1,17 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
-import { paymentAttemptsTable, paymentWebhookEventsTable } from "@/server/db/schema";
-import { decrementInventoryForPaidOrder } from "@/server/inventory/service";
+import {
+  inventoryHoldsTable,
+  inventoryStocksTable,
+  orderItemsTable,
+  paymentAttemptsTable,
+  paymentWebhookEventsTable,
+} from "@/server/db/schema";
+import {
+  decrementInventoryForPaidOrder,
+  releaseInventoryHoldsForOrder,
+  restoreInventoryFromHolds,
+} from "@/server/inventory/service";
 import {
   getOrderById,
   getOrderByPaymentSessionId,
@@ -101,9 +111,45 @@ export async function processPaymentWebhookEvent(
     if (shouldIgnoreDowngrade) {
       // Keep the paid order immutable for late/out-of-order webhooks.
     } else if (event.outcome === "succeeded") {
-      if (!(order.status === "paid" && order.paymentStatus === "succeeded")) {
+      // F4-5: verify holds still exist before marking paid.
+      // If holds were swept, re-check stock availability.
+      const holds = await db
+        .select()
+        .from(inventoryHoldsTable)
+        .where(eq(inventoryHoldsTable.orderId, order.id));
+
+      if (holds.length === 0) {
+        // Holds expired/swept — verify we can still fulfill from current stock.
+        const items = await db
+          .select()
+          .from(orderItemsTable)
+          .where(eq(orderItemsTable.orderId, order.id));
+
+        const stockRows = await db
+          .select()
+          .from(inventoryStocksTable)
+          .where(inArray(inventoryStocksTable.variantId, items.map((i) => i.variantId)));
+
+        const stockByVariant = new Map(stockRows.map((r) => [r.variantId, r.onHandQty]));
+        const shortages = items.filter((item) => {
+          const onHand = stockByVariant.get(item.variantId) ?? 0;
+          return onHand < item.quantity;
+        });
+
+        if (shortages.length > 0) {
+          // Stock was restored and someone else bought it. Reject payment.
+          throw new Error(
+            `Cannot fulfill order ${order.id}: stock no longer available after hold expiry`,
+          );
+        }
+
+        // Stock is still available — decrement it now (holds are already gone).
         await decrementInventoryForPaidOrder(order.id);
+      } else {
+        // Holds still active — release them (stock already reserved at checkout).
+        await releaseInventoryHoldsForOrder(order.id);
       }
+
       await updateOrderPaymentState({
         orderId: order.id,
         status: mapped.status,
@@ -114,6 +160,8 @@ export async function processPaymentWebhookEvent(
         actorId: event.providerId,
       });
     } else if (event.outcome === "failed" || event.outcome === "cancelled") {
+      // F4-5: payment failed — restore held stock and delete holds.
+      await restoreInventoryFromHolds(order.id);
       await updateOrderPaymentState({
         orderId: order.id,
         status: mapped.status,
