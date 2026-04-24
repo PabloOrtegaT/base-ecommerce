@@ -90,7 +90,7 @@ export async function createPendingCheckoutOrder(input: {
 
   const holdStatements = [];
 
-  // F4-5: create inventory holds and decrement onHand within the same batch
+  // F4-5: create inventory holds and decrement onHand + available within the same batch
   if (input.holdLines && input.holdLines.length > 0) {
     const holdExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
     const holdValues = input.holdLines.map((line) => ({
@@ -105,15 +105,15 @@ export async function createPendingCheckoutOrder(input: {
     holdStatements.push(db.insert(inventoryHoldsTable).values(holdValues));
 
     for (const line of input.holdLines) {
+      // Use raw subtraction guarded by the database trigger (0006 migration).
+      // If concurrent checkout consumed the stock first, the trigger aborts
+      // the transaction and the entire batch rolls back.
       holdStatements.push(
         db
           .update(inventoryStocksTable)
           .set({
-            onHandQty: sql`CASE
-              WHEN ${inventoryStocksTable.onHandQty} >= ${line.quantity}
-                THEN ${inventoryStocksTable.onHandQty} - ${line.quantity}
-              ELSE 0
-            END`,
+            onHandQty: sql`${inventoryStocksTable.onHandQty} - ${line.quantity}`,
+            availableQty: sql`${inventoryStocksTable.availableQty} - ${line.quantity}`,
             updatedAt: createdAt,
           })
           .where(eq(inventoryStocksTable.variantId, line.variantId)),
@@ -128,15 +128,28 @@ export async function createPendingCheckoutOrder(input: {
     ...holdStatements,
   ];
 
-  const batchResult = await db.batch(batchStatements as [typeof batchStatements[number], ...typeof batchStatements[number][]]);
+  try {
+    const batchResult = await db.batch(
+      batchStatements as [typeof batchStatements[number], ...typeof batchStatements[number][]],
+    );
 
-  const orderRows = batchResult[0];
+    const orderRows = batchResult[0];
 
-  if (!orderRows || orderRows.length === 0) {
-    throw new Error("Could not create checkout order.");
+    if (!orderRows || orderRows.length === 0) {
+      throw new Error("Could not create checkout order.");
+    }
+
+    return orderRows[0];
+  } catch (error) {
+    // Detect trigger abort from concurrent stock consumption (0006 migration).
+    const message = error instanceof Error ? error.message : String(error);
+    if (message.includes("onHandQty would go negative")) {
+      throw new Error(
+        "StockConflict: Another customer purchased the last items while you were checking out. Please refresh your cart.",
+      );
+    }
+    throw error;
   }
-
-  return orderRows[0];
 }
 
 export async function attachCheckoutPaymentSession(input: {
