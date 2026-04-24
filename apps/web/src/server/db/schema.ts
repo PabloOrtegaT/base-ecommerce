@@ -133,6 +133,26 @@ export const inventoryStocksTable = sqliteTable(
   }),
 );
 
+export const inventoryHoldsTable = sqliteTable(
+  "inventoryHold",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    orderId: text("orderId")
+      .notNull()
+      .references(() => ordersTable.id, { onDelete: "cascade" }),
+    variantId: text("variantId").notNull(),
+    quantity: integer("quantity").notNull(),
+    expiresAt: integer("expiresAt", { mode: "timestamp_ms" }).notNull(),
+    createdAt: integer("createdAt", { mode: "timestamp_ms" }).notNull().default(nowSql),
+  },
+  (table) => ({
+    orderIdx: index("inventory_hold_order_idx").on(table.orderId),
+    expiresAtIdx: index("inventory_hold_expires_at_idx").on(table.expiresAt),
+  }),
+);
+
 export const authRefreshSessionsTable = sqliteTable(
   "authRefreshSession",
   {

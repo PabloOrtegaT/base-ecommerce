@@ -1,7 +1,10 @@
 import { and, eq } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { paymentAttemptsTable, paymentWebhookEventsTable } from "@/server/db/schema";
-import { decrementInventoryForPaidOrder } from "@/server/inventory/service";
+import {
+  releaseInventoryHoldsForOrder,
+  restoreInventoryFromHolds,
+} from "@/server/inventory/service";
 import {
   getOrderById,
   getOrderByPaymentSessionId,
@@ -101,9 +104,8 @@ export async function processPaymentWebhookEvent(
     if (shouldIgnoreDowngrade) {
       // Keep the paid order immutable for late/out-of-order webhooks.
     } else if (event.outcome === "succeeded") {
-      if (!(order.status === "paid" && order.paymentStatus === "succeeded")) {
-        await decrementInventoryForPaidOrder(order.id);
-      }
+      // F4-5: stock was already decremented at checkout via hold; release the hold now.
+      await releaseInventoryHoldsForOrder(order.id);
       await updateOrderPaymentState({
         orderId: order.id,
         status: mapped.status,
@@ -114,6 +116,8 @@ export async function processPaymentWebhookEvent(
         actorId: event.providerId,
       });
     } else if (event.outcome === "failed" || event.outcome === "cancelled") {
+      // F4-5: payment failed — restore held stock and delete holds.
+      await restoreInventoryFromHolds(order.id);
       await updateOrderPaymentState({
         orderId: order.id,
         status: mapped.status,

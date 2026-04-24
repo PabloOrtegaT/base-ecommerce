@@ -1,7 +1,9 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import type { CartState } from "@/features/cart/cart";
 import { getDb } from "@/server/db/client";
 import {
+  inventoryHoldsTable,
+  inventoryStocksTable,
   orderItemsTable,
   ordersTable,
   orderStatusTimelineTable,
@@ -35,6 +37,7 @@ export async function createPendingCheckoutOrder(input: {
   couponSnapshot?: OrderCouponSnapshot;
   id?: string;
   orderNumber?: string;
+  holdLines?: Array<{ variantId: string; quantity: number }>;
 }) {
   const db = getDb();
   const createdAt = nowDate();
@@ -85,11 +88,47 @@ export async function createPendingCheckoutOrder(input: {
     createdAt,
   };
 
-  const batchResult = await db.batch([
+  const holdStatements = [];
+
+  // F4-5: create inventory holds and decrement onHand within the same batch
+  if (input.holdLines && input.holdLines.length > 0) {
+    const holdExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
+    const holdValues = input.holdLines.map((line) => ({
+      id: crypto.randomUUID(),
+      orderId: orderId,
+      variantId: line.variantId,
+      quantity: line.quantity,
+      expiresAt: holdExpiresAt,
+      createdAt,
+    }));
+
+    holdStatements.push(db.insert(inventoryHoldsTable).values(holdValues));
+
+    for (const line of input.holdLines) {
+      holdStatements.push(
+        db
+          .update(inventoryStocksTable)
+          .set({
+            onHandQty: sql`CASE
+              WHEN ${inventoryStocksTable.onHandQty} >= ${line.quantity}
+                THEN ${inventoryStocksTable.onHandQty} - ${line.quantity}
+              ELSE 0
+            END`,
+            updatedAt: createdAt,
+          })
+          .where(eq(inventoryStocksTable.variantId, line.variantId)),
+      );
+    }
+  }
+
+  const batchStatements = [
     db.insert(ordersTable).values(orderValues).returning(),
     db.insert(orderItemsTable).values(itemValues),
     db.insert(orderStatusTimelineTable).values(timelineValues),
-  ]);
+    ...holdStatements,
+  ];
+
+  const batchResult = await db.batch(batchStatements as [typeof batchStatements[number], ...typeof batchStatements[number][]]);
 
   const orderRows = batchResult[0];
 

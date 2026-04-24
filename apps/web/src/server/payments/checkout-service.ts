@@ -184,6 +184,10 @@ export async function createCheckoutSessionForUser(input: {
       cart: cartSnapshot.cart,
       totals,
       ...(coupon ? { couponCode: coupon.code, couponSnapshot: toCouponSnapshot(coupon) } : {}),
+      holdLines: cartSnapshot.cart.items.map((item) => ({
+        variantId: item.variantId,
+        quantity: item.quantity,
+      })),
     });
     orderCreated = true;
 
