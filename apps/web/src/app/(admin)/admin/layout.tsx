@@ -21,7 +21,7 @@ import {
   assertAdminHostAccess,
   isAdminRole,
 } from "@/server/admin/role-guard";
-import type { Role } from "@base-ecommerce/domain";
+import type { Role } from "@cannaculture/domain";
 import { getSessionUser } from "@/server/auth/session";
 import { getHostRuntimeConfig } from "@/server/config/runtime-env";
 import { buildAbsoluteUrl, resolveHostPolicy } from "@/server/config/host-policy";

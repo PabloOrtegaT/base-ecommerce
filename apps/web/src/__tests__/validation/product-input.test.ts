@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { productInputSchema } from "@base-ecommerce/validation";
+import { productInputSchema } from "@cannaculture/validation";
 
 describe("productInputSchema", () => {
   it("accepts a valid payload", () => {

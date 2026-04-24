@@ -1,4 +1,4 @@
-import type { Role } from "@base-ecommerce/domain";
+import type { Role } from "@cannaculture/domain";
 import "next-auth";
 import "next-auth/jwt";
 

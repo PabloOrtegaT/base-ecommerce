@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { validateCategoryAttributeValues } from "@base-ecommerce/domain";
+import { validateCategoryAttributeValues } from "@cannaculture/domain";
 
 describe("category attribute validation", () => {
   it("accepts a valid seed-packet attribute payload", () => {

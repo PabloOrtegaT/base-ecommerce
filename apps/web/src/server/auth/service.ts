@@ -1,5 +1,5 @@
 import { and, eq, sql } from "drizzle-orm";
-import { roleSchema, type Role } from "@base-ecommerce/domain";
+import { roleSchema, type Role } from "@cannaculture/domain";
 import { getRuntimeEnvironment } from "@/server/config/runtime-env";
 import { getDb } from "@/server/db/client";
 import { passwordResetTokensTable, usersTable, verificationTokensTable } from "@/server/db/schema";

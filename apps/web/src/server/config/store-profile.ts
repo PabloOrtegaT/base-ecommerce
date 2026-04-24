@@ -1,4 +1,4 @@
-import { resolveStoreProfile, type StoreProfile } from "@base-ecommerce/domain";
+import { resolveStoreProfile, type StoreProfile } from "@cannaculture/domain";
 
 export const STORE_PROFILE_ENV_KEY = "STORE_PROFILE";
 

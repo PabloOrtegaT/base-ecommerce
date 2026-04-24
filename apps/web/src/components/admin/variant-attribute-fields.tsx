@@ -7,7 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { AttributeDefinition, AttributeValue } from "@base-ecommerce/domain";
+import type { AttributeDefinition, AttributeValue } from "@cannaculture/domain";
 
 export function VariantAttributeFields({
   definitions,

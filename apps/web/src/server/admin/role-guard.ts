@@ -1,5 +1,5 @@
 import { headers } from "next/headers";
-import { canRolePerform, type Permission, type Role } from "@base-ecommerce/domain";
+import { canRolePerform, type Permission, type Role } from "@cannaculture/domain";
 import { normalizeHost, resolveHostPolicy } from "@/server/config/host-policy";
 import { getAuthRuntimeConfig, getHostRuntimeConfig } from "@/server/config/runtime-env";
 import { getSessionUser } from "@/server/auth/session";

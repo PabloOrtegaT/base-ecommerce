@@ -40,7 +40,7 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  transpilePackages: ["@base-ecommerce/domain", "@base-ecommerce/ui", "@base-ecommerce/validation"],
+  transpilePackages: ["@cannaculture/domain", "@cannaculture/ui", "@cannaculture/validation"],
   distDir: process.env.NEXT_DIST_DIR ?? ".next",
   allowedDevOrigins: [
     "localhost",

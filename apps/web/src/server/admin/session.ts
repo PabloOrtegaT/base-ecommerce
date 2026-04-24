@@ -1,4 +1,4 @@
-import { roleSchema, type Role } from "@base-ecommerce/domain";
+import { roleSchema, type Role } from "@cannaculture/domain";
 import { getSessionUser, requireSessionUser } from "@/server/auth/session";
 import { assertAdminHostAccess, isAdminRole } from "./role-guard";
 

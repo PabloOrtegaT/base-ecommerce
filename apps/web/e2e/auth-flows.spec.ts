@@ -45,7 +45,7 @@ test("forgot password page renders and accepts submission", async ({ page }) => 
   await page.goto("/forgot-password");
   await expect(page.getByRole("heading", { name: "Forgot password" })).toBeVisible();
 
-  await page.getByLabel("Email").fill("owner@base-ecommerce.local");
+  await page.getByLabel("Email").fill("owner@cannaculture.local");
   await page.getByRole("button", { name: "Send reset email" }).click();
 
   // After submission, should show "sent" confirmation or stay on page
@@ -66,7 +66,7 @@ test("login page renders with email and password fields", async ({ page }) => {
 
 test("login with valid credentials redirects to storefront", async ({ page }) => {
   await page.goto("/login");
-  await page.getByLabel("Email").fill("owner@base-ecommerce.local");
+  await page.getByLabel("Email").fill("owner@cannaculture.local");
   await page.getByLabel("Password").fill("ChangeMe123!");
   await page.getByRole("button", { name: "Sign in" }).click();
 
@@ -83,7 +83,7 @@ test("login with valid credentials redirects to storefront", async ({ page }) =>
 
 test("login with wrong password shows error", async ({ page }) => {
   await page.goto("/login");
-  await page.getByLabel("Email").fill("owner@base-ecommerce.local");
+  await page.getByLabel("Email").fill("owner@cannaculture.local");
   await page.getByLabel("Password").fill("WrongPassword999!");
   await page.getByRole("button", { name: "Sign in" }).click();
 

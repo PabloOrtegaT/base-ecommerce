@@ -1,5 +1,5 @@
 // apps/web/src/components/storefront/product-card.tsx
-import type { AttributeValue, CategoryTemplateKey } from "@base-ecommerce/domain";
+import type { AttributeValue, CategoryTemplateKey } from "@cannaculture/domain";
 import Link from "next/link";
 import { Package } from "lucide-react";
 import { Badge } from "@/components/ui/badge";

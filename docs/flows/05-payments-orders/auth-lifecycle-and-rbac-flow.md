@@ -56,7 +56,7 @@ The platform needs real authentication with role-based authorization so admin op
   - `id`, `email`, `role`, `emailVerified`, `sid`, `authenticatedAt`
 - Viewer route contract:
   - `GET /api/auth/viewer` -> `{ authenticated, email?, role?, isAdmin? }`
-- Role/permission model from `@base-ecommerce/domain`.
+- Role/permission model from `@cannaculture/domain`.
 
 ## Failure modes and edge cases
 

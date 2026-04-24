@@ -1,5 +1,5 @@
-import type { AttributeValue, CategoryTemplateKey } from "@base-ecommerce/domain";
-import { getCategoryAttributeDefinitions } from "@base-ecommerce/domain";
+import type { AttributeValue, CategoryTemplateKey } from "@cannaculture/domain";
+import { getCategoryAttributeDefinitions } from "@cannaculture/domain";
 
 export type ProductDetailMeta = {
   badges: string[];

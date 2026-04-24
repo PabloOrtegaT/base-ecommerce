@@ -1,4 +1,4 @@
-import type { FeaturedSale, NewsPost, Product, PromoBanner } from "@base-ecommerce/domain";
+import type { FeaturedSale, NewsPost, Product, PromoBanner } from "@cannaculture/domain";
 
 type HomeMapInput = {
   now: Date;

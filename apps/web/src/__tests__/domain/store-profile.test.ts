@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { defaultStoreProfile, resolveStoreProfile } from "@base-ecommerce/domain";
+import { defaultStoreProfile, resolveStoreProfile } from "@cannaculture/domain";
 
 describe("store profile contract", () => {
   it("falls back to plant-seeds when no value is provided", () => {

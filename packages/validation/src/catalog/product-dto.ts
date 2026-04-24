@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { currencySchema, productStatusSchema, categoryTemplateKeySchema } from "@base-ecommerce/domain";
+import { currencySchema, productStatusSchema, categoryTemplateKeySchema } from "@cannaculture/domain";
 
 const productPayloadBaseSchema = z.object({
   categoryId: z.string().uuid(),

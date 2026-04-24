@@ -53,8 +53,8 @@ Customers need a complete browse-and-buy journey from discovery to cart with cle
 
 ## Data contracts or schemas involved
 
-- Domain entity schemas from `@base-ecommerce/domain`.
-- DTO validation contracts from `@base-ecommerce/validation`.
+- Domain entity schemas from `@cannaculture/domain`.
+- DTO validation contracts from `@cannaculture/validation`.
 - Storefront data source:
   - categories
   - products

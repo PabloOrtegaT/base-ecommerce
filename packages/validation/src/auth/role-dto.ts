@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { roleSchema } from "@base-ecommerce/domain";
+import { roleSchema } from "@cannaculture/domain";
 
 export const createRoleAssignmentInputSchema = z.object({
   userId: z.string().uuid(),

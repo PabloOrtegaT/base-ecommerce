@@ -1,4 +1,4 @@
-import { couponSchema, type Coupon, type Currency } from "@base-ecommerce/domain";
+import { couponSchema, type Coupon, type Currency } from "@cannaculture/domain";
 import { getStorefrontSeed, type StorefrontSeed } from "./storefront-db";
 
 export type AdminOrderStatus = "pending" | "paid" | "shipped" | "cancelled";

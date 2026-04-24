@@ -13,8 +13,8 @@ The plant-seeds ecommerce fork needs a focused data model with strong validation
 
 ## How to use
 
-1. Use `@base-ecommerce/domain` for core schemas, typed attribute validation, RBAC checks, and invariants.
-2. Use `@base-ecommerce/validation` for create/update API DTO schemas.
+1. Use `@cannaculture/domain` for core schemas, typed attribute validation, RBAC checks, and invariants.
+2. Use `@cannaculture/validation` for create/update API DTO schemas.
 3. Validate product/category attribute payloads with `validateCategoryAttributeValues(templateKey, values)`.
 4. Enforce permissions using `canRolePerform(role, permission)`.
 5. Validate inventory and price invariants before write operations.

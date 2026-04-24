@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { categoryTemplateKeySchema } from "@base-ecommerce/domain";
+import { categoryTemplateKeySchema } from "@cannaculture/domain";
 
 export const createCategoryInputSchema = z.object({
   slug: z.string().min(3).max(120).regex(/^[a-z0-9-]+$/),

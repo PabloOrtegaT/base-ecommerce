@@ -2,7 +2,7 @@ import {
   getCategoryAttributeDefinitions,
   validateCategoryAttributeValues,
   type CategoryTemplateKey,
-} from "@base-ecommerce/domain";
+} from "@cannaculture/domain";
 import { createAdminMutationError } from "./mutation-errors";
 
 export function parseVariantFormAttributeValues(

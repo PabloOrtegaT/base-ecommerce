@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { newsStatusSchema } from "@base-ecommerce/domain";
+import { newsStatusSchema } from "@cannaculture/domain";
 
 const newsPayloadSchema = z.object({
   slug: z.string().min(3).max(140).regex(/^[a-z0-9-]+$/),

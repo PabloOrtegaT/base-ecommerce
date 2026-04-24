@@ -10,7 +10,7 @@ const workspaceDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), 
 const useRemote = process.argv.includes("--remote");
 const usePreview = process.argv.includes("--preview");
 
-const email = process.env.DEV_OWNER_EMAIL ?? "owner@base-ecommerce.local";
+const email = process.env.DEV_OWNER_EMAIL ?? "owner@cannaculture.local";
 const password = process.env.DEV_OWNER_PASSWORD ?? "ChangeMe123!";
 const userId = process.env.DEV_OWNER_USER_ID ?? "b2b0caf8-3d7a-4e55-a8ff-7e19633208c7";
 const cartId = process.env.DEV_OWNER_CART_ID ?? "aa38b784-84a3-4d9d-9981-eb758568c3a7";

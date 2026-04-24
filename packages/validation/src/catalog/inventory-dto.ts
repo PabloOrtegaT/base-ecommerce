@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { inventoryLedgerReasonSchema } from "@base-ecommerce/domain";
+import { inventoryLedgerReasonSchema } from "@cannaculture/domain";
 
 export const createInventoryLedgerEntryInputSchema = z.object({
   productId: z.string().uuid(),

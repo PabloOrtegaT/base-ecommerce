@@ -1,4 +1,4 @@
-import type { AttributeValue, CategoryTemplateKey } from "@base-ecommerce/domain";
+import type { AttributeValue, CategoryTemplateKey } from "@cannaculture/domain";
 
 export type CardMeta = {
   badges: string[];

@@ -66,7 +66,7 @@ export function LoginForm({ callbackUrl, googleEnabled, facebookEnabled }: Login
             name="email"
             type="email"
             required
-            placeholder="jane@example.com"
+            placeholder="tu@email.com"
             autoComplete="email"
             disabled={isPending}
           />

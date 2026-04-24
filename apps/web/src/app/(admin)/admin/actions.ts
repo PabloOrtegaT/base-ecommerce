@@ -10,7 +10,7 @@ import {
   currencySchema,
   newsStatusSchema,
   productStatusSchema,
-} from "@base-ecommerce/domain";
+} from "@cannaculture/domain";
 import {
   createAdminCategory,
   createAdminCoupon,

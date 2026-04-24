@@ -45,7 +45,7 @@ Admin routes must enforce role boundaries so non-authorized roles cannot access 
 
 ## Data contracts or schemas involved
 
-- `roleSchema` and RBAC permission matrix from `@base-ecommerce/domain`.
+- `roleSchema` and RBAC permission matrix from `@cannaculture/domain`.
 - Session user contract from auth layer (`id`, `email`, `role`, `emailVerified`).
 - Route permission map in `server/admin/role-guard.ts`.
 

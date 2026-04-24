@@ -11,7 +11,7 @@ function getEmailClient() {
 
 function getFromAddress() {
   const env = getRuntimeEnvironment();
-  return env.RESEND_FROM_EMAIL ?? "Cannaculture <noreply@example.com>";
+  return env.RESEND_FROM_EMAIL ?? "Cannaculture <noreply@cannaculture.com.mx>";
 }
 
 export async function sendVerificationEmail(to: string, verificationUrl: string) {

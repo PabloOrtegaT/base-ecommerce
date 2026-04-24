@@ -1,4 +1,4 @@
-import { roleSchema, type Permission, type Role, canRolePerform } from "@base-ecommerce/domain";
+import { roleSchema, type Permission, type Role, canRolePerform } from "@cannaculture/domain";
 import { cookies, headers } from "next/headers";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";

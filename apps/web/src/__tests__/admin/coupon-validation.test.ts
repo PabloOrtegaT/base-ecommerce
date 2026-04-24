@@ -3,7 +3,7 @@ import {
   calculateCouponDiscountCents,
   couponSchema,
   isCouponApplicable,
-} from "@base-ecommerce/domain";
+} from "@cannaculture/domain";
 
 const validPercentageCoupon = {
   id: "e1614ca0-194d-48f7-a77d-55f77f390f43",

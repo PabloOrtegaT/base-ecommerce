@@ -63,7 +63,7 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
                   name="email"
                   type="email"
                   required
-                  placeholder="jane@example.com"
+                  placeholder="tu@email.com"
                   autoComplete="email"
                 />
               </div>

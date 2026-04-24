@@ -3,7 +3,7 @@ import {
   createCategoryInputSchema,
   createNewsPostInputSchema,
   createVariantInputSchema,
-} from "@base-ecommerce/validation";
+} from "@cannaculture/validation";
 
 describe("API DTO validation", () => {
   it("rejects malformed category payload", () => {

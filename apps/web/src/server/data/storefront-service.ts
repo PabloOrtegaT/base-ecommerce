@@ -1,4 +1,4 @@
-import type { Category, Product, ProductVariant, StoreProfile } from "@base-ecommerce/domain";
+import type { Category, Product, ProductVariant, StoreProfile } from "@cannaculture/domain";
 import { mapHomeContent } from "@/features/home/map-home-content";
 import { getActiveStoreProfile } from "@/server/config/store-profile";
 import { getProfileRuntimeStore } from "./runtime-store";

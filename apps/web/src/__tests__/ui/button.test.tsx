@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { Button } from "@base-ecommerce/ui";
+import { Button } from "@cannaculture/ui";
 
 describe("Button", () => {
   it("renders label and default styling", () => {

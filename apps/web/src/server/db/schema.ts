@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { index, integer, primaryKey, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
-import type { Role } from "@base-ecommerce/domain";
+import type { Role } from "@cannaculture/domain";
 
 const nowSql = sql`(unixepoch('now') * 1000)`;
 

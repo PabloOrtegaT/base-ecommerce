@@ -12,7 +12,7 @@ import {
   type Product,
   type ProductVariant,
   type PromoBanner,
-} from "@base-ecommerce/domain";
+} from "@cannaculture/domain";
 
 export type StorefrontSeed = {
   categories: Category[];

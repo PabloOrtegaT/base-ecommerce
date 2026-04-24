@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "base-ecommerce",
+  "name": "cannaculture",
   "main": "./custom-worker.ts",
   "minify": true,
   "compatibility_date": "2025-03-25",
@@ -8,22 +8,22 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "base-ecommerce-prod",
+      "database_name": "cannaculture-prod",
       "database_id": "0ca8362c-041a-4801-beec-11cd9cdf8a1d",
       "preview_database_id": "ce4b9ca8-2c9c-42ee-8601-e41a7131fa82",
       "migrations_dir": "drizzle/migrations"
     }
   ],
   "vars": {
-    "APP_BASE_URL": "https://spookynexus.com",
-    "ADMIN_BASE_URL": "https://admin.spookynexus.com",
-    "NEXTAUTH_URL": "https://spookynexus.com",
-    "NEXTAUTH_URL_INTERNAL": "https://spookynexus.com",
+    "APP_BASE_URL": "https://cannaculture.com.mx",
+    "ADMIN_BASE_URL": "https://admin.cannaculture.com.mx",
+    "NEXTAUTH_URL": "https://cannaculture.com.mx",
+    "NEXTAUTH_URL_INTERNAL": "https://cannaculture.com.mx",
     "ADMIN_REQUIRE_CF_ACCESS": "false"
   },
   "routes": [
-    { "pattern": "spookynexus.com", "custom_domain": true },
-    { "pattern": "admin.spookynexus.com", "custom_domain": true }
+    { "pattern": "cannaculture.com.mx", "custom_domain": true },
+    { "pattern": "admin.cannaculture.com.mx", "custom_domain": true }
   ],
   "assets": {
     "binding": "ASSETS",

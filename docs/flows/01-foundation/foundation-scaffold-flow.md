@@ -48,8 +48,8 @@ Starting from an empty repository is slow and error-prone when every new store f
 
 ## Data contracts or schemas involved
 
-- `productInputSchema` from `@base-ecommerce/validation` defines baseline product payload validation.
-- `Button` API from `@base-ecommerce/ui` defines shared component contract for UI usage.
+- `productInputSchema` from `@cannaculture/validation` defines baseline product payload validation.
+- `Button` API from `@cannaculture/ui` defines shared component contract for UI usage.
 
 ## Failure modes and edge cases
 

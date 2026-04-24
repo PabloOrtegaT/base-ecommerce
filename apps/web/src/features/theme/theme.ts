@@ -1,4 +1,4 @@
-export const THEME_STORAGE_KEY = "base-ecommerce-theme";
+export const THEME_STORAGE_KEY = "cannaculture-theme";
 
 export const themeValues = ["light", "dark"] as const;
 export type Theme = (typeof themeValues)[number];

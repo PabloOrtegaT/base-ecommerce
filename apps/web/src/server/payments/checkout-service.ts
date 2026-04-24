@@ -2,7 +2,7 @@ import {
   calculateCouponDiscountCents,
   isCouponApplicable,
   type Coupon,
-} from "@base-ecommerce/domain";
+} from "@cannaculture/domain";
 import { z } from "zod";
 import { calculateCartTotals, getUnavailableCartItems, type CartState } from "@/features/cart/cart";
 import { getHostRuntimeConfig } from "@/server/config/runtime-env";

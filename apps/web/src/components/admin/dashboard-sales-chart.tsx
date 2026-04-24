@@ -4,7 +4,7 @@ import * as React from "react";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import type { SalesTrendPoint } from "@/features/admin/types";
 import { formatCurrencyCents } from "@/features/admin/format";
-import type { Currency } from "@base-ecommerce/domain";
+import type { Currency } from "@cannaculture/domain";
 
 type DashboardSalesTrendChartProps = {
   salesTrend: SalesTrendPoint[];

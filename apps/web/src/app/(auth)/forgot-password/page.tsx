@@ -59,7 +59,7 @@ export default async function ForgotPasswordPage({ searchParams }: ForgotPasswor
                   name="email"
                   type="email"
                   required
-                  placeholder="jane@example.com"
+                  placeholder="tu@email.com"
                   autoComplete="email"
                 />
               </div>

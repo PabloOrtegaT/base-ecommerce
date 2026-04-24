@@ -10,7 +10,7 @@ import {
   featuredSaleSchema,
   type Currency,
   type ProductStatus,
-} from "@base-ecommerce/domain";
+} from "@cannaculture/domain";
 import {
   createCategoryInputSchema,
   createCouponInputSchema,
@@ -22,7 +22,7 @@ import {
   updateCategoryInputSchema,
   updateProductInputSchema,
   updateVariantInputSchema,
-} from "@base-ecommerce/validation";
+} from "@cannaculture/validation";
 import type {
   AdminCategoryRow,
   AdminContentRow,

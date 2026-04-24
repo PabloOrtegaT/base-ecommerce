@@ -1,4 +1,4 @@
-# AGENTS.md — base-ecommerce
+# AGENTS.md — cannaculture
 
 Compact guide for OpenCode sessions. Trust `package.json`, config, and CI over prose.
 
@@ -39,7 +39,7 @@ npm run test
 npm run test:e2e
 ```
 
-- Focused web-only unit run: `npm run test --workspace @base-ecommerce/web`
+- Focused web-only unit run: `npm run test --workspace @cannaculture/web`
 - Root `npm run build` builds `apps/web` only.
 - CI and deploy quality order is `lint -> typecheck -> test -> build`.
 
@@ -50,7 +50,7 @@ npm run test:e2e
 3. Seed local D1: `npm run db:seed`
 
 - Default local app URL: `http://localhost:3000`
-- Default seeded owner: `owner@base-ecommerce.local` / `ChangeMe123!`
+- Default seeded owner: `owner@cannaculture.local` / `ChangeMe123!`
 - For split storefront/admin hosts, set `APP_BASE_URL=http://storefront.lvh.me:3000` and `ADMIN_BASE_URL=http://admin.lvh.me:3000` in `.dev.vars`.
 - Runtime env precedence matters: explicit process env overrides Cloudflare `wrangler.jsonc` vars. Keep this in mind for local redirects and Playwright runs.
 

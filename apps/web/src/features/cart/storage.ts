@@ -2,7 +2,7 @@
 
 import { type CartState, emptyCartState } from "./cart";
 
-const CART_STORAGE_KEY = "base-ecommerce-cart";
+const CART_STORAGE_KEY = "cannaculture-cart";
 
 export function readCartFromStorage(): CartState {
   if (typeof window === "undefined") {

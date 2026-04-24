@@ -22,8 +22,8 @@ All forks require reusable coupon management with consistent discount rules: per
 
 ## How it works
 
-- Coupon schema lives in `@base-ecommerce/domain` (`couponSchema`).
-- DTO input schemas in `@base-ecommerce/validation` enforce create/update payload shape.
+- Coupon schema lives in `@cannaculture/domain` (`couponSchema`).
+- DTO input schemas in `@cannaculture/validation` enforce create/update payload shape.
 - Service creates coupons with usage tracking defaults (`usageCount = 0`) and timestamps.
 - Helper functions evaluate applicability (`isActive`, date window, usage limits) and discount computation.
 

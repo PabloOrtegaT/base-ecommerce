@@ -4,7 +4,7 @@ import {
   assertValidCompareAtPrice,
   calculateStockOnHand,
   inventoryLedgerEntrySchema,
-} from "@base-ecommerce/domain";
+} from "@cannaculture/domain";
 
 describe("catalog invariants", () => {
   it("accepts valid compare-at pricing", () => {

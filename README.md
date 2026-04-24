@@ -42,7 +42,7 @@ App URL: `http://localhost:3000`
 
 Default local seeded owner account:
 
-- Email: `owner@base-ecommerce.local`
+- Email: `owner@cannaculture.local`
 - Password: `ChangeMe123!`
 
 Important: these credentials are for local development only (`db:seed` runs against local D1).
@@ -124,9 +124,9 @@ The web app includes OpenNext + Wrangler setup under `apps/web`.
 ### D1 setup (required before first deploy)
 
 1. Create production D1:
-   `npx wrangler d1 create base-ecommerce-prod`
+   `npx wrangler d1 create cannaculture-prod`
 2. Create preview/shared staging D1:
-   `npx wrangler d1 create base-ecommerce-preview`
+   `npx wrangler d1 create cannaculture-preview`
 3. Copy the returned database IDs and update `apps/web/wrangler.jsonc`:
    `database_id` = prod DB ID
    `preview_database_id` = preview DB ID

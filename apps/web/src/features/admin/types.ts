@@ -3,7 +3,7 @@ import type {
   CouponType,
   Currency,
   ProductStatus,
-} from "@base-ecommerce/domain";
+} from "@cannaculture/domain";
 
 export type AdminProductRow = {
   id: string;

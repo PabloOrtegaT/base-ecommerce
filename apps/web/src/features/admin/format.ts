@@ -1,4 +1,4 @@
-import type { Currency } from "@base-ecommerce/domain";
+import type { Currency } from "@cannaculture/domain";
 
 export function formatCurrencyCents(cents: number, currency: Currency) {
   return new Intl.NumberFormat("en-US", {

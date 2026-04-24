@@ -1,1 +1,1 @@
-export { cn } from "@base-ecommerce/ui";
+export { cn } from "@cannaculture/ui";

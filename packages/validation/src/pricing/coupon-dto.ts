@@ -1,4 +1,4 @@
-import { couponTypeSchema, currencySchema } from "@base-ecommerce/domain";
+import { couponTypeSchema, currencySchema } from "@cannaculture/domain";
 import { z } from "zod";
 
 const couponPayloadBaseSchema = z.object({

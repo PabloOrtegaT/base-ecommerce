@@ -1,5 +1,5 @@
 {
-  "name": "@base-ecommerce/web",
+  "name": "@cannaculture/web",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -30,9 +30,9 @@
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.1",
-    "@base-ecommerce/domain": "file:../../packages/domain",
-    "@base-ecommerce/ui": "file:../../packages/ui",
-    "@base-ecommerce/validation": "file:../../packages/validation",
+    "@cannaculture/domain": "file:../../packages/domain",
+    "@cannaculture/ui": "file:../../packages/ui",
+    "@cannaculture/validation": "file:../../packages/validation",
     "@radix-ui/react-label": "^2.1.8",
     "@radix-ui/react-select": "^2.2.6",
     "@radix-ui/react-separator": "^1.1.8",

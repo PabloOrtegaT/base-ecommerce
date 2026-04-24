@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canRolePerform, permissionSchema, roleSchema } from "@base-ecommerce/domain";
+import { canRolePerform, permissionSchema, roleSchema } from "@cannaculture/domain";
 
 describe("RBAC permission matrix", () => {
   it("owner can perform every permission", () => {

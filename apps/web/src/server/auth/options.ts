@@ -3,7 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import FacebookProvider from "next-auth/providers/facebook";
 import GoogleProvider from "next-auth/providers/google";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
-import { roleSchema } from "@base-ecommerce/domain";
+import { roleSchema } from "@cannaculture/domain";
 import { buildAbsoluteUrl, isAdminPath, resolveHostPolicy, resolveSharedCookieDomain } from "@/server/config/host-policy";
 import { getHostRuntimeConfig, getRuntimeEnvironment } from "@/server/config/runtime-env";
 import { getDb } from "@/server/db/client";

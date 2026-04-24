@@ -13,9 +13,9 @@ Cloudflare deploys fail when D1 bindings are missing or use placeholder IDs. Thi
 ## How to use
 
 1. Create production D1 database:
-   `npx wrangler d1 create base-ecommerce-prod`
+   `npx wrangler d1 create cannaculture-prod`
 2. Create preview D1 database:
-   `npx wrangler d1 create base-ecommerce-preview`
+   `npx wrangler d1 create cannaculture-preview`
 3. Copy database IDs into `apps/web/wrangler.jsonc`:
    - `database_id` (production)
    - `preview_database_id` (preview)

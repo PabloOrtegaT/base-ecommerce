@@ -1,4 +1,4 @@
-import { categoryTemplateKeySchema } from "@base-ecommerce/domain";
+import { categoryTemplateKeySchema } from "@cannaculture/domain";
 import Link from "next/link";
 import { AccessDenied } from "@/components/admin/access-denied";
 import { CategoriesTable } from "@/components/admin/tables";
